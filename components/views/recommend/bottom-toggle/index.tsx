@@ -10,7 +10,7 @@ interface BottomToggleProps {
   onViewModeChange: (mode: ViewMode) => void;
 }
 
-export const BottomToggle: React.FC<BottomToggleProps> = ({
+ const BottomToggle: React.FC<BottomToggleProps> = ({
   viewMode,
   onViewModeChange,
 }) => {
@@ -61,3 +61,5 @@ export const BottomToggle: React.FC<BottomToggleProps> = ({
     </View>
   );
 };
+
+export default BottomToggle

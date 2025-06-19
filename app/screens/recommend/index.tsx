@@ -8,14 +8,17 @@ import {
   SafeAreaView,
   TextInput,
   Keyboard,
+  StyleSheet,
 } from "react-native";
 import { profilesData, Profile } from "@/data/profiles-data";
 import sizer from "@/utils/sizer";
-import { styles } from "./styles";
-import { SearchHeader } from "./search-header";
-import { NormalHeader } from "./normal-header";
-import { ProfileCard } from "./profile-card";
-import { BottomToggle } from "./bottom-toggle";
+import { SearchHeader } from "@/components/views/recommend/search-header";
+import { NormalHeader } from "@/components/views/recommend/normal-header";
+import { ProfileCard } from "@/components/views/recommend/profile-card";
+import BottomToggle from "@/components/views/recommend/bottom-toggle";
+import { Typography } from "@/constants/typography";
+import { Colors } from "@/constants/Colors";
+
 
 const { width } = Dimensions.get("window");
 const cardWidth = (width - sizer.horizontalScale(48)) / 3; // 3 cards per row with responsive margins
@@ -76,7 +79,7 @@ function RecommendScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* <StatusBar barStyle="light-content" backgroundColor="#000000" /> */}
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
       {/* Header - switches between normal and search */}
       {isSearchActive ? (
@@ -130,5 +133,36 @@ function RecommendScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.mainBlack,
+    paddingTop: sizer.horizontalScale(40),
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: sizer.horizontalScale(16),
+    paddingBottom: sizer.moderateScale(100),
+  },
+  profileGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  noResultsContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: sizer.moderateScale(40),
+  },
+  noResultsText: {
+    fontFamily: Typography.fonts.regular,
+    fontSize: Typography.sizes.md,
+    color: Colors.secondWhite,
+    textAlign: "center",
+  },
+});
 
 export default RecommendScreen;

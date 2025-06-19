@@ -15,7 +15,7 @@ export const styles = StyleSheet.create({
   },
   toggleContainer: {
     flexDirection: "row",
-    backgroundColor: "rgba(23, 25, 29, 0.7)", // Semi-transparent background
+    backgroundColor: "rgba(23, 25, 29, 0.1)", // Semi-transparent background
     borderRadius: sizer.moderateScale(25),
     padding: sizer.moderateScale(4), // Small padding around the buttons
     borderWidth: 1,
@@ -32,7 +32,7 @@ export const styles = StyleSheet.create({
   toggleButton: {
     backgroundColor: "transparent", // Transparent by default
     paddingHorizontal: sizer.horizontalScale(28),
-    paddingVertical: sizer.moderateScale(10),
+    paddingVertical: sizer.moderateScale(8),
     borderRadius: sizer.moderateScale(21),
     marginHorizontal: sizer.horizontalScale(2),
     minWidth: sizer.horizontalScale(90),
@@ -40,7 +40,7 @@ export const styles = StyleSheet.create({
     zIndex: 1, // Ensure buttons are above blur
   },
   toggleButtonActive: {
-    backgroundColor: Colors.mainWhite, // Only active button has white background
+    backgroundColor: Colors.mainWhite, 
   },
   toggleText: {
     fontFamily: Typography.fonts.semiBold,
