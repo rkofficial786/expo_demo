@@ -20,6 +20,7 @@ interface FloatingButton {
   id: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
+  label: string;
   action: () => void;
 }
 
@@ -27,7 +28,8 @@ interface ProfileCardProps {
   profile: Profile;
   cardWidth: number;
   onPress?: (profile: Profile) => void;
-  onOverlayVisible?: (visible: boolean, cardId: string, cardRef?: any) => void;
+  onOverlayVisible?: (visible: boolean, cardId: string, cardData?: any) => void;
+  onActiveButtonChange?: (activeIndex: number | null, label: string | null) => void;
   cardPosition: { x: number; y: number };
   isActiveCard?: boolean;
 }
@@ -37,35 +39,36 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   cardWidth, 
   onPress,
   onOverlayVisible,
+  onActiveButtonChange,
   cardPosition,
   isActiveCard = false
 }) => {
   const [isLongPressing, setIsLongPressing] = useState(false);
   const [activeButtonIndex, setActiveButtonIndex] = useState<number | null>(null);
-  const overlayOpacity = useRef(new Animated.Value(0)).current;
-  const buttonScale = useRef(new Animated.Value(0)).current;
   const cardHighlight = useRef(new Animated.Value(0)).current;
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-  const cardRef = useRef<View>(null);
   
-  // Define floating action buttons
+  // Define floating action buttons with labels
   const floatingButtons: FloatingButton[] = [
     {
       id: "message",
       icon: "chatbubble",
       color: Colors.whiteHint,
+      label: "Message",
       action: () => console.log("Message", profile.name)
     },
     {
       id: "follow",
       icon: "person-add",
       color: Colors.whiteHint,
+      label: "Follow",
       action: () => console.log("Follow", profile.name)
     },
     {
       id: "share",
       icon: "share",
       color: Colors.whiteHint,
+      label: "Share",
       action: () => console.log("Share", profile.name)
     }
   ];
@@ -131,14 +134,15 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         
         setIsLongPressing(true);
-        // Pass card reference for positioning the overlay version
+        // Pass card data with button info and active button callback
         onOverlayVisible?.(true, profile.id, { 
           cardPosition, 
           cardWidth, 
           profile,
           floatingButtons,
           getButtonPosition,
-          shouldShowOnLeft
+          shouldShowOnLeft,
+          onActiveButtonChange
         });
         
         // Animate card highlight
@@ -161,6 +165,10 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
             Haptics.selectionAsync();
           }
           setActiveButtonIndex(buttonIndex);
+          
+          // Update parent component with active button info
+          const label = buttonIndex !== null ? floatingButtons[buttonIndex].label : null;
+          onActiveButtonChange?.(buttonIndex, label);
         }
       }
     },
@@ -178,6 +186,10 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
         
+        // Reset active button
+        setActiveButtonIndex(null);
+        onActiveButtonChange?.(null, null);
+        
         // Hide overlay and reset card highlight
         Animated.timing(cardHighlight, {
           toValue: 0,
@@ -185,7 +197,6 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
           useNativeDriver: false,
         }).start(() => {
           setIsLongPressing(false);
-          setActiveButtonIndex(null);
           onOverlayVisible?.(false, profile.id);
         });
       } else {
@@ -197,7 +208,6 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
 
   return (
     <Animated.View
-      ref={cardRef}
       style={[
         styles.profileCard, 
         { 

@@ -35,10 +35,16 @@ function RecommendScreen() {
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [activeCardData, setActiveCardData] = useState<any>(null);
-  const [activeButtonIndex, setActiveButtonIndex] = useState<number | null>(null);
+  const [activeButtonIndex, setActiveButtonIndex] = useState<number | null>(
+    null
+  );
+  const [activeButtonLabel, setActiveButtonLabel] = useState<string | null>(
+    null
+  );
   const searchInputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const buttonScale = useRef(new Animated.Value(0)).current;
+  const textOpacity = useRef(new Animated.Value(0)).current;
 
   // Filter profiles based on search query
   useEffect(() => {
@@ -82,27 +88,57 @@ function RecommendScreen() {
     console.log("Options pressed");
   };
 
-  const handleOverlayVisible = (visible: boolean, cardId: string, cardData?: any) => {
+  const handleOverlayVisible = (
+    visible: boolean,
+    cardId: string,
+    cardData?: any
+  ) => {
     setIsOverlayVisible(visible);
     setActiveCardId(visible ? cardId : null);
     setActiveCardData(visible ? cardData : null);
-    
+
     if (visible && cardData) {
-      // Animate floating buttons
-      Animated.spring(buttonScale, {
-        toValue: 1,
-        tension: 80,
-        friction: 8,
-        useNativeDriver: true,
-      }).start();
+      // Animate floating buttons and text
+      Animated.parallel([
+        Animated.spring(buttonScale, {
+          toValue: 1,
+          tension: 80,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.timing(textOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
     } else {
-      // Hide floating buttons
-      Animated.timing(buttonScale, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
+      // Hide floating buttons and text
+      Animated.parallel([
+        Animated.timing(buttonScale, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(textOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Reset active button state
+      setActiveButtonIndex(null);
+      setActiveButtonLabel(null);
     }
+  };
+
+  const handleActiveButtonChange = (
+    buttonIndex: number | null,
+    label: string | null
+  ) => {
+    setActiveButtonIndex(buttonIndex);
+    setActiveButtonLabel(label);
   };
 
   // Calculate card position in screen coordinates
@@ -110,36 +146,18 @@ function RecommendScreen() {
     const cardsPerRow = 3;
     const row = Math.floor(index / cardsPerRow);
     const col = index % cardsPerRow;
-    
-    const horizontalPadding = sizer.horizontalScale(16);
-    const cardSpacing = (width - horizontalPadding * 2 - cardWidth * cardsPerRow) / (cardsPerRow - 1);
-    
-    const x = horizontalPadding + col * (cardWidth + cardSpacing);
-    const y = row * (sizer.moderateScale(160) + sizer.moderateScale(16)) + sizer.moderateScale(100);
-    
-    return { x, y };
-  };
 
-  // Handle gesture movement for floating buttons
-  const handleGestureMove = (gestureX: number, gestureY: number) => {
-    if (!activeCardData) return;
-    
-    const buttonRadius = sizer.moderateScale(30);
-    let newActiveIndex = null;
-    
-    for (let i = 0; i < activeCardData.floatingButtons.length; i++) {
-      const buttonPos = activeCardData.getButtonPosition(i, activeCardData.floatingButtons.length);
-      const distance = Math.sqrt(
-        Math.pow(gestureX - buttonPos.x, 2) + Math.pow(gestureY - buttonPos.y, 2)
-      );
-      
-      if (distance <= buttonRadius) {
-        newActiveIndex = i;
-        break;
-      }
-    }
-    
-    setActiveButtonIndex(newActiveIndex);
+    const horizontalPadding = sizer.horizontalScale(16);
+    const cardSpacing =
+      (width - horizontalPadding * 2 - cardWidth * cardsPerRow) /
+      (cardsPerRow - 1);
+
+    const x = horizontalPadding + col * (cardWidth + cardSpacing);
+    const y =
+      row * (sizer.moderateScale(160) + sizer.moderateScale(16)) +
+      sizer.moderateScale(100);
+
+    return { x, y };
   };
 
   return (
@@ -180,6 +198,7 @@ function RecommendScreen() {
               cardWidth={cardWidth}
               onPress={handleProfilePress}
               onOverlayVisible={handleOverlayVisible}
+              onActiveButtonChange={handleActiveButtonChange}
               cardPosition={getCardPosition(index)}
               isActiveCard={activeCardId === profile.id}
             />
@@ -210,14 +229,14 @@ function RecommendScreen() {
               top: activeCardData.cardPosition.y,
               left: activeCardData.cardPosition.x,
               width: activeCardData.cardWidth,
-            }
+            },
           ]}
           pointerEvents="none"
         >
           <View style={styles.activeCard}>
-            <Image 
-              source={{ uri: activeCardData.profile.imageUrl }} 
-              style={styles.activeCardImage} 
+            <Image
+              source={{ uri: activeCardData.profile.imageUrl }}
+              style={styles.activeCardImage}
             />
             <View style={styles.activeCardOverlay}>
               <View style={styles.activeCardInfo}>
@@ -244,6 +263,53 @@ function RecommendScreen() {
         </View>
       )}
 
+      {/* Dynamic text heading above floating buttons */}
+
+      {isOverlayVisible && activeCardData && (
+        <View
+          style={[
+            styles.floatingButtonsContainer,
+            {
+              top: activeCardData.cardPosition.y + sizer.moderateScale(10),
+              left:
+                activeCardData.cardPosition.x + activeCardData.cardWidth / 2,
+            },
+          ]}
+          pointerEvents="none"
+        >
+          {[1].map((button: any, index: number) => {
+            const buttonPos = activeCardData.getButtonPosition(
+              index,
+              activeCardData.floatingButtons.length
+            );
+            const isActive = activeButtonIndex === index;
+
+            return (
+              <Animated.View
+                key={button.id}
+                style={[
+                  styles.dynamicTextContainer,
+                  {
+                    transform: [
+                      // { scale: buttonScale },
+                      { translateX: buttonPos.x },
+                      { translateY: buttonPos.y },
+                      { scale: isActive ? 1.3 : 1 },
+                    ],
+                    backgroundColor: "transparent", // Sky blue when active
+                    opacity: 1,
+                  },
+                ]}
+              >
+                <Text style={styles.dynamicText}>
+                  {activeButtonLabel || "Follow"}
+                </Text>
+              </Animated.View>
+            );
+          })}
+        </View>
+      )}
+
       {/* Floating buttons above everything */}
       {isOverlayVisible && activeCardData && (
         <View
@@ -251,15 +317,21 @@ function RecommendScreen() {
             styles.floatingButtonsContainer,
             {
               top: activeCardData.cardPosition.y + sizer.moderateScale(80),
-              left: activeCardData.cardPosition.x + activeCardData.cardWidth / 2 -30,
-            }
+              left:
+                activeCardData.cardPosition.x +
+                activeCardData.cardWidth / 2 -
+                30,
+            },
           ]}
           pointerEvents="none"
         >
           {activeCardData.floatingButtons.map((button: any, index: number) => {
-            const buttonPos = activeCardData.getButtonPosition(index, activeCardData.floatingButtons.length);
+            const buttonPos = activeCardData.getButtonPosition(
+              index,
+              activeCardData.floatingButtons.length
+            );
             const isActive = activeButtonIndex === index;
-            
+
             return (
               <Animated.View
                 key={button.id}
@@ -272,7 +344,9 @@ function RecommendScreen() {
                       { translateY: buttonPos.y },
                       { scale: isActive ? 1.3 : 1 },
                     ],
-                    backgroundColor: button.color,
+                    backgroundColor: isActive
+                      ? Colors.accentBlue
+                      : button.color, // Sky blue when active
                     opacity: isActive ? 1 : 0.9,
                   },
                 ]}
@@ -285,7 +359,7 @@ function RecommendScreen() {
               </Animated.View>
             );
           })}
-          
+
           {/* Center dot */}
           <View style={styles.centerIndicator}>
             <View style={styles.centerDot} />
@@ -325,7 +399,7 @@ const styles = StyleSheet.create({
     color: Colors.secondWhite,
     textAlign: "center",
   },
-  
+
   // Global overlay - covers all original content
   globalOverlay: {
     position: "absolute",
@@ -336,7 +410,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.8)",
     zIndex: 900,
   },
-  
+
   // Active card rendered above overlay
   activeCardContainer: {
     position: "absolute",
@@ -346,12 +420,6 @@ const styles = StyleSheet.create({
     height: sizer.moderateScale(160),
     borderRadius: sizer.moderateScale(16),
     overflow: "hidden",
-    // backgroundColor: Colors.cards,
-    // shadowColor: Colors.accentBlue,
-    // shadowOffset: { width: 0, height: 0 },
-    // shadowOpacity: 0.8,
-    // shadowRadius: 20,
-    // elevation: 15,
   },
   activeCardImage: {
     width: "100%",
@@ -392,11 +460,29 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    // borderWidth: 3,
-    // borderColor: Colors.accentBlue,
     borderRadius: sizer.moderateScale(16),
   },
-  
+
+  // Dynamic text heading above floating buttons
+  dynamicTextContainer: {
+    position: "absolute",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1150,
+    backgroundColor: "red",
+  },
+  dynamicText: {
+    fontFamily: Typography.fonts.semiBold,
+    fontSize: sizer.fontScale(40),
+    color: Colors.mainWhite,
+    // textAlign: "center",
+    // backgroundColor: "rgba(0, 0, 0, 0.7)",
+    paddingHorizontal: sizer.moderateScale(16),
+    paddingVertical: sizer.moderateScale(8),
+    borderRadius: sizer.moderateScale(20),
+    overflow: "hidden",
+  },
+
   // Floating buttons above everything
   floatingButtonsContainer: {
     position: "absolute",
