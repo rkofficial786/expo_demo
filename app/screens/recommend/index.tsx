@@ -36,8 +36,12 @@ function RecommendScreen() {
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [activeCardData, setActiveCardData] = useState<any>(null);
-  const [activeButtonIndex, setActiveButtonIndex] = useState<number | null>(null);
-  const [activeButtonLabel, setActiveButtonLabel] = useState<string | null>(null);
+  const [activeButtonIndex, setActiveButtonIndex] = useState<number | null>(
+    null
+  );
+  const [activeButtonLabel, setActiveButtonLabel] = useState<string | null>(
+    null
+  );
   const searchInputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const buttonScale = useRef(new Animated.Value(0)).current;
@@ -95,7 +99,6 @@ function RecommendScreen() {
     setActiveCardData(visible ? cardData : null);
 
     if (visible && cardData) {
-      // Animate floating buttons and text
       Animated.parallel([
         Animated.spring(buttonScale, {
           toValue: 1,
@@ -110,7 +113,6 @@ function RecommendScreen() {
         }),
       ]).start();
     } else {
-      // Hide floating buttons and text
       Animated.parallel([
         Animated.timing(buttonScale, {
           toValue: 0,
@@ -157,59 +159,60 @@ function RecommendScreen() {
     return { x, y };
   };
 
-  // ONLY ADDITION: Global gesture detection that works properly
   const globalPanResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => false, // Don't interfere with card's initial touch
-    onMoveShouldSetPanResponder: () => isOverlayVisible, // Only handle moves when overlay is visible
-    
+    onStartShouldSetPanResponder: () => false,
+    onMoveShouldSetPanResponder: () => isOverlayVisible,
+
     onPanResponderMove: (evt, gestureState) => {
       if (isOverlayVisible && activeCardData) {
-        // Calculate finger position relative to buttons center
-        const buttonsCenterX = activeCardData.cardPosition.x + activeCardData.cardWidth / 2 - 30;
-        const buttonsCenterY = activeCardData.cardPosition.y + sizer.moderateScale(80);
-        
+        const buttonsCenterX =
+          activeCardData.cardPosition.x + activeCardData.cardWidth / 2 - 30;
+        const buttonsCenterY =
+          activeCardData.cardPosition.y + sizer.moderateScale(80);
+
         const fingerX = evt.nativeEvent.pageX - buttonsCenterX;
         const fingerY = evt.nativeEvent.pageY - buttonsCenterY;
-        
-        // Use the same detection logic as in the card
+
         const buttonRadius = sizer.moderateScale(50);
         let buttonIndex = null;
-        
+
         for (let i = 0; i < activeCardData.floatingButtons.length; i++) {
-          const buttonPos = activeCardData.getButtonPosition(i, activeCardData.floatingButtons.length);
-          const distance = Math.sqrt(
-            Math.pow(fingerX - buttonPos.x, 2) + Math.pow(fingerY - buttonPos.y, 2)
+          const buttonPos = activeCardData.getButtonPosition(
+            i,
+            activeCardData.floatingButtons.length
           );
-          
+          const distance = Math.sqrt(
+            Math.pow(fingerX - buttonPos.x, 2) +
+              Math.pow(fingerY - buttonPos.y, 2)
+          );
+
           if (distance <= buttonRadius) {
             buttonIndex = i;
             break;
           }
         }
-        
-        // Update active button state only if changed
+
         if (buttonIndex !== activeButtonIndex) {
-          const label = buttonIndex !== null ? activeCardData.floatingButtons[buttonIndex].label : null;
+          const label =
+            buttonIndex !== null
+              ? activeCardData.floatingButtons[buttonIndex].label
+              : null;
           handleActiveButtonChange(buttonIndex, label);
         }
       }
     },
 
-    // IMPORTANT: Handle release to reset everything properly
     onPanResponderRelease: () => {
       if (isOverlayVisible) {
-        // Execute action if a button was selected
         if (activeButtonIndex !== null && activeCardData) {
           activeCardData.floatingButtons[activeButtonIndex].action();
         }
-        
-        // Reset everything back to normal
+
         handleOverlayVisible(false, "");
       }
     },
 
     onPanResponderTerminate: () => {
-      // Also handle if gesture gets terminated
       if (isOverlayVisible) {
         handleOverlayVisible(false, "");
       }
@@ -237,7 +240,6 @@ function RecommendScreen() {
         />
       )}
 
-      {/* Content - wrapped with gesture detector */}
       <View style={{ flex: 1 }} {...globalPanResponder.panHandlers}>
         <ScrollView
           ref={scrollViewRef}
@@ -262,7 +264,6 @@ function RecommendScreen() {
             ))}
           </View>
 
-          {/* No results message */}
           {filteredProfiles.length === 0 && searchQuery.length > 0 && (
             <View style={styles.noResultsContainer}>
               <Text style={styles.noResultsText}>
@@ -273,12 +274,10 @@ function RecommendScreen() {
         </ScrollView>
       </View>
 
-      {/* Global overlay - covers everything */}
       {isOverlayVisible && (
         <View style={styles.globalOverlay} pointerEvents="none" />
       )}
 
-      {/* Active card rendered above overlay */}
       {isOverlayVisible && activeCardData && (
         <View
           style={[
@@ -315,7 +314,7 @@ function RecommendScreen() {
                 </Text>
               </View>
             </View>
-            {/* Blue border highlight */}
+
             <View style={styles.activeCardBorder} />
           </View>
         </View>
@@ -366,7 +365,6 @@ function RecommendScreen() {
         </View>
       )}
 
-      {/* Floating buttons above everything */}
       {isOverlayVisible && activeCardData && (
         <View
           style={[
@@ -374,9 +372,9 @@ function RecommendScreen() {
             {
               top: activeCardData.cardPosition.y + sizer.moderateScale(80),
               left:
-              activeCardData.cardPosition.x +
-              activeCardData.cardWidth / 2 +
-              (activeCardData.shouldShowOnLeft() ? -30 : 30), 
+                activeCardData.cardPosition.x +
+                activeCardData.cardWidth / 2 +
+                (activeCardData.shouldShowOnLeft() ? -30 : 30),
             },
           ]}
           pointerEvents="none"
@@ -422,6 +420,11 @@ function RecommendScreen() {
           </View>
         </View>
       )}
+
+       {/* <BottomToggle
+        viewMode={viewMode}
+        onViewModeChange={(view) => setViewMode(view)}
+      />  */}
     </SafeAreaView>
   );
 }
@@ -456,7 +459,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // Global overlay - covers all original content
   globalOverlay: {
     position: "absolute",
     top: 0,
@@ -467,7 +469,6 @@ const styles = StyleSheet.create({
     zIndex: 900,
   },
 
-  // Active card rendered above overlay
   activeCardContainer: {
     position: "absolute",
     zIndex: 1000,
@@ -519,7 +520,6 @@ const styles = StyleSheet.create({
     borderRadius: sizer.moderateScale(16),
   },
 
-  // Dynamic text heading above floating buttons
   dynamicTextContainer: {
     position: "absolute",
     justifyContent: "center",
@@ -537,7 +537,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
 
-  // Floating buttons above everything
   floatingButtonsContainer: {
     position: "absolute",
     justifyContent: "center",

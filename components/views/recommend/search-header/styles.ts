@@ -7,7 +7,7 @@ export const styles = StyleSheet.create({
   searchHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: sizer.horizontalScale(16),
+    paddingHorizontal: sizer.horizontalScale(8),
     paddingVertical: sizer.moderateScale(12),
     gap: sizer.horizontalScale(12),
     height:sizer.horizontalScale(70)
@@ -18,7 +18,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.cards,
     borderRadius: sizer.moderateScale(25),
-    paddingHorizontal: sizer.horizontalScale(16),
+    paddingHorizontal: sizer.horizontalScale(12),
     paddingVertical: sizer.horizontalScale(8),
   },
   searchIcon: {

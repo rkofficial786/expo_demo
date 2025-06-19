@@ -10,16 +10,16 @@ interface BottomToggleProps {
   onViewModeChange: (mode: ViewMode) => void;
 }
 
- const BottomToggle: React.FC<BottomToggleProps> = ({
+const BottomToggle: React.FC<BottomToggleProps> = ({
   viewMode,
   onViewModeChange,
 }) => {
   return (
     <View style={styles.bottomToggle}>
       <View style={styles.toggleContainer}>
-        {/* Blur Background for the entire toggle */}
-        <BlurView
-          intensity={20}
+       
+        <BlurView 
+          intensity={15} 
           style={styles.blurBackground}
           experimentalBlurMethod="dimezisBlurView"
         />
@@ -62,4 +62,4 @@ interface BottomToggleProps {
   );
 };
 
-export default BottomToggle
+export default BottomToggle;
