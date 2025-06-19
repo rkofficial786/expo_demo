@@ -11,6 +11,7 @@ import {
   StyleSheet,
   Animated,
   Image,
+  PanResponder,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { profilesData, Profile } from "@/data/profiles-data";
@@ -35,12 +36,8 @@ function RecommendScreen() {
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [activeCardData, setActiveCardData] = useState<any>(null);
-  const [activeButtonIndex, setActiveButtonIndex] = useState<number | null>(
-    null
-  );
-  const [activeButtonLabel, setActiveButtonLabel] = useState<string | null>(
-    null
-  );
+  const [activeButtonIndex, setActiveButtonIndex] = useState<number | null>(null);
+  const [activeButtonLabel, setActiveButtonLabel] = useState<string | null>(null);
   const searchInputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const buttonScale = useRef(new Animated.Value(0)).current;
@@ -160,6 +157,65 @@ function RecommendScreen() {
     return { x, y };
   };
 
+  // ONLY ADDITION: Global gesture detection that works properly
+  const globalPanResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => false, // Don't interfere with card's initial touch
+    onMoveShouldSetPanResponder: () => isOverlayVisible, // Only handle moves when overlay is visible
+    
+    onPanResponderMove: (evt, gestureState) => {
+      if (isOverlayVisible && activeCardData) {
+        // Calculate finger position relative to buttons center
+        const buttonsCenterX = activeCardData.cardPosition.x + activeCardData.cardWidth / 2 - 30;
+        const buttonsCenterY = activeCardData.cardPosition.y + sizer.moderateScale(80);
+        
+        const fingerX = evt.nativeEvent.pageX - buttonsCenterX;
+        const fingerY = evt.nativeEvent.pageY - buttonsCenterY;
+        
+        // Use the same detection logic as in the card
+        const buttonRadius = sizer.moderateScale(50);
+        let buttonIndex = null;
+        
+        for (let i = 0; i < activeCardData.floatingButtons.length; i++) {
+          const buttonPos = activeCardData.getButtonPosition(i, activeCardData.floatingButtons.length);
+          const distance = Math.sqrt(
+            Math.pow(fingerX - buttonPos.x, 2) + Math.pow(fingerY - buttonPos.y, 2)
+          );
+          
+          if (distance <= buttonRadius) {
+            buttonIndex = i;
+            break;
+          }
+        }
+        
+        // Update active button state only if changed
+        if (buttonIndex !== activeButtonIndex) {
+          const label = buttonIndex !== null ? activeCardData.floatingButtons[buttonIndex].label : null;
+          handleActiveButtonChange(buttonIndex, label);
+        }
+      }
+    },
+
+    // IMPORTANT: Handle release to reset everything properly
+    onPanResponderRelease: () => {
+      if (isOverlayVisible) {
+        // Execute action if a button was selected
+        if (activeButtonIndex !== null && activeCardData) {
+          activeCardData.floatingButtons[activeButtonIndex].action();
+        }
+        
+        // Reset everything back to normal
+        handleOverlayVisible(false, "");
+      }
+    },
+
+    onPanResponderTerminate: () => {
+      // Also handle if gesture gets terminated
+      if (isOverlayVisible) {
+        handleOverlayVisible(false, "");
+      }
+    },
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
@@ -181,39 +237,41 @@ function RecommendScreen() {
         />
       )}
 
-      {/* Content */}
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        scrollEnabled={!isOverlayVisible}
-      >
-        <View style={styles.profileGrid}>
-          {filteredProfiles.map((profile, index) => (
-            <ProfileCard
-              key={profile.id}
-              profile={profile}
-              cardWidth={cardWidth}
-              onPress={handleProfilePress}
-              onOverlayVisible={handleOverlayVisible}
-              onActiveButtonChange={handleActiveButtonChange}
-              cardPosition={getCardPosition(index)}
-              isActiveCard={activeCardId === profile.id}
-            />
-          ))}
-        </View>
-
-        {/* No results message */}
-        {filteredProfiles.length === 0 && searchQuery.length > 0 && (
-          <View style={styles.noResultsContainer}>
-            <Text style={styles.noResultsText}>
-              No profiles found for "{searchQuery}"
-            </Text>
+      {/* Content - wrapped with gesture detector */}
+      <View style={{ flex: 1 }} {...globalPanResponder.panHandlers}>
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          scrollEnabled={!isOverlayVisible}
+        >
+          <View style={styles.profileGrid}>
+            {filteredProfiles.map((profile, index) => (
+              <ProfileCard
+                key={profile.id}
+                profile={profile}
+                cardWidth={cardWidth}
+                onPress={handleProfilePress}
+                onOverlayVisible={handleOverlayVisible}
+                onActiveButtonChange={handleActiveButtonChange}
+                cardPosition={getCardPosition(index)}
+                isActiveCard={activeCardId === profile.id}
+              />
+            ))}
           </View>
-        )}
-      </ScrollView>
+
+          {/* No results message */}
+          {filteredProfiles.length === 0 && searchQuery.length > 0 && (
+            <View style={styles.noResultsContainer}>
+              <Text style={styles.noResultsText}>
+                No profiles found for "{searchQuery}"
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
 
       {/* Global overlay - covers everything */}
       {isOverlayVisible && (
@@ -264,13 +322,12 @@ function RecommendScreen() {
       )}
 
       {/* Dynamic text heading above floating buttons */}
-
       {isOverlayVisible && activeCardData && (
         <View
           style={[
             styles.floatingButtonsContainer,
             {
-              top: activeCardData.cardPosition.y + sizer.moderateScale(10),
+              top: activeCardData.cardPosition.y + sizer.moderateScale(2),
               left:
                 activeCardData.cardPosition.x + activeCardData.cardWidth / 2,
             },
@@ -291,18 +348,17 @@ function RecommendScreen() {
                   styles.dynamicTextContainer,
                   {
                     transform: [
-                      // { scale: buttonScale },
                       { translateX: buttonPos.x },
                       { translateY: buttonPos.y },
-                      { scale: isActive ? 1.3 : 1 },
+                      // { scale: isActive ? 1.3 : 1 },
                     ],
-                    backgroundColor: "transparent", // Sky blue when active
+                    backgroundColor: "transparent",
                     opacity: 1,
                   },
                 ]}
               >
                 <Text style={styles.dynamicText}>
-                  {activeButtonLabel || "Follow"}
+                  {activeButtonLabel || ""}
                 </Text>
               </Animated.View>
             );
@@ -318,9 +374,9 @@ function RecommendScreen() {
             {
               top: activeCardData.cardPosition.y + sizer.moderateScale(80),
               left:
-                activeCardData.cardPosition.x +
-                activeCardData.cardWidth / 2 -
-                30,
+              activeCardData.cardPosition.x +
+              activeCardData.cardWidth / 2 +
+              (activeCardData.shouldShowOnLeft() ? -30 : 30), 
             },
           ]}
           pointerEvents="none"
@@ -346,7 +402,7 @@ function RecommendScreen() {
                     ],
                     backgroundColor: isActive
                       ? Colors.accentBlue
-                      : button.color, // Sky blue when active
+                      : button.color,
                     opacity: isActive ? 1 : 0.9,
                   },
                 ]}
@@ -475,8 +531,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.semiBold,
     fontSize: sizer.fontScale(40),
     color: Colors.mainWhite,
-    // textAlign: "center",
-    // backgroundColor: "rgba(0, 0, 0, 0.7)",
     paddingHorizontal: sizer.moderateScale(16),
     paddingVertical: sizer.moderateScale(8),
     borderRadius: sizer.moderateScale(20),

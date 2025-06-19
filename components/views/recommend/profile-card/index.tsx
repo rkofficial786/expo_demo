@@ -108,9 +108,9 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
     };
   };
 
-  // Detect which button is under the finger
+  // ONLY FIX: Better gesture detection - larger radius for easier detection
   const getButtonUnderFinger = (gestureX: number, gestureY: number) => {
-    const buttonRadius = sizer.moderateScale(30);
+    const buttonRadius = sizer.moderateScale(50); // Increased from 30 to 50 for better detection
     
     for (let i = 0; i < floatingButtons.length; i++) {
       const buttonPos = getButtonPosition(i, floatingButtons.length);
@@ -160,6 +160,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         const fingerY = gestureState.dy;
         const buttonIndex = getButtonUnderFinger(fingerX, fingerY);
         
+        // ONLY FIX: Update active button immediately when finger moves
         if (buttonIndex !== activeButtonIndex) {
           if (buttonIndex !== null) {
             Haptics.selectionAsync();
@@ -213,26 +214,26 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         { 
           width: cardWidth,
           // Add highlight effect
-          shadowColor: cardHighlight.interpolate({
-            inputRange: [0, 1],
-            outputRange: ['transparent', Colors.accentBlue],
-          }),
-          shadowOffset: {
-            width: 0,
-            height: 0,
-          },
-          shadowOpacity: cardHighlight.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0, 0.8],
-          }),
-          shadowRadius: cardHighlight.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0, 20],
-          }),
-          elevation: cardHighlight.interpolate({
-            inputRange: [0, 1],
-            outputRange: [2, 15],
-          }),
+          // shadowColor: cardHighlight.interpolate({
+          //   inputRange: [0, 1],
+          //   outputRange: ['transparent', Colors.accentBlue],
+          // }),
+          // shadowOffset: {
+          //   width: 0,
+          //   height: 0,
+          // },
+          // shadowOpacity: cardHighlight.interpolate({
+          //   inputRange: [0, 1],
+          //   outputRange: [0, 0.8],
+          // }),
+          // shadowRadius: cardHighlight.interpolate({
+          //   inputRange: [0, 1],
+          //   outputRange: [0, 20],
+          // }),
+          // elevation: cardHighlight.interpolate({
+          //   inputRange: [0, 1],
+          //   outputRange: [2, 15],
+          // }),
         }
       ]}
       {...panResponder.panHandlers}
