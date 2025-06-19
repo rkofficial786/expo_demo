@@ -10,7 +10,8 @@ export const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: sizer.horizontalScale(8),
     paddingVertical: sizer.moderateScale(12),
-    paddingTop: sizer.moderateScale(8),
+    paddingTop: sizer.moderateScale(12),
+    height:sizer.horizontalScale(70)
   },
   headerButton: {
     width: sizer.moderateScale(40),
@@ -24,6 +25,7 @@ export const styles = StyleSheet.create({
     color: Colors.mainWhite,
     flex: 1,
     textAlign: "center",
+    marginLeft:sizer.horizontalScale(34)
   },
   headerRight: {
     flexDirection: "row",

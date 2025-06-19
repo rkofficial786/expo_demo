@@ -152,7 +152,7 @@ function RecommendScreen() {
     const x = horizontalPadding + col * (cardWidth + cardSpacing);
     const y =
       row * (sizer.moderateScale(160) + sizer.moderateScale(16)) +
-      sizer.moderateScale(100);
+      sizer.moderateScale(110);
 
     return { x, y };
   };
@@ -398,7 +398,7 @@ function RecommendScreen() {
                       { scale: buttonScale },
                       { translateX: buttonPos.x },
                       { translateY: buttonPos.y },
-                      { scale: isActive ? 1.3 : 1 },
+                      { scale: isActive ? 1.1 : 1 },
                     ],
                     backgroundColor: isActive
                       ? Colors.accentBlue
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
     zIndex: 900,
   },
 

@@ -6,7 +6,7 @@ import { Typography } from "@/constants/typography";
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Dating App</Text>
+      
       <Text style={styles.subtitle}>Welcome to your app!</Text>
 
       <Link href="./screens/recommend" style={styles.link}>

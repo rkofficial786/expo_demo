@@ -10,6 +10,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: sizer.horizontalScale(16),
     paddingVertical: sizer.moderateScale(12),
     gap: sizer.horizontalScale(12),
+    height:sizer.horizontalScale(70)
   },
   searchContainer: {
     flex: 1,
