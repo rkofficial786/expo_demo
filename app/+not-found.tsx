@@ -1,5 +1,7 @@
 import { Link, Stack } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+import { Colors } from '@/constants/Colors';
+import { Typography } from '@/constants/typography';
 
 export default function NotFoundScreen() {
   return (
@@ -19,32 +21,32 @@ export default function NotFoundScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000', // mainBlack
+    backgroundColor: Colors.mainBlack,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
   },
   title: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 24,
-    color: '#FFFFFF', // mainWhite
+    fontFamily: Typography.fonts.bold,
+    fontSize: Typography.sizes.xxl,
+    color: Colors.mainWhite,
     marginBottom: 10,
   },
   subtitle: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 16,
-    color: '#72777C', // secondWhite
+    fontFamily: Typography.fonts.regular,
+    fontSize: Typography.sizes.md,
+    color: Colors.secondWhite,
     marginBottom: 30,
   },
   link: {
-    backgroundColor: '#FFB902', // accentYellow
+    backgroundColor: Colors.accentYellow,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   linkText: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 16,
-    color: '#000000',
+    fontFamily: Typography.fonts.medium,
+    fontSize: Typography.sizes.md,
+    color: Colors.mainBlack,
   },
 });
