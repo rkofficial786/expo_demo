@@ -134,4 +134,10 @@ export const profilesData: Profile[] = [
     distance: '4 km to you',
     imageUrl: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?w=400&h=600&fit=crop&crop=face',
   },
+  {
+    id: '21',
+    name: 'James Lawrence',
+    distance: '7 km to you',
+    imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=600&fit=crop&crop=face',
+  },
 ];

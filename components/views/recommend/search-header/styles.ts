@@ -7,7 +7,7 @@ export const styles = StyleSheet.create({
   searchHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: sizer.horizontalScale(8),
+    paddingHorizontal: sizer.horizontalScale(12),
     paddingVertical: sizer.moderateScale(12),
     gap: sizer.horizontalScale(12),
     height:sizer.horizontalScale(70)
