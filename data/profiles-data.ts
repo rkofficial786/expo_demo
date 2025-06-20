@@ -18,7 +18,7 @@ export const profilesData: Profile[] = [
     id: '2',
     name: 'Julia Davis',
     distance: '5 km to you',
-    imageUrl: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=400&h=600&fit=crop&crop=face',
+    imageUrl: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?w=400&h=600&fit=crop&crop=face',
   },
   {
     id: '3',

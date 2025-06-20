@@ -37,12 +37,10 @@ function RecommendScreen() {
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [activeCardData, setActiveCardData] = useState<any>(null);
-  const [activeButtonIndex, setActiveButtonIndex] = useState<number | null>(
-    null
-  );
-  const [activeButtonLabel, setActiveButtonLabel] = useState<string | null>(
-    null
-  );
+  const [activeButtonIndex, setActiveButtonIndex] = useState<number | null>(null);
+  const [activeButtonLabel, setActiveButtonLabel] = useState<string | null>(null);
+  const [scrollOffset, setScrollOffset] = useState(0);
+  
   const searchInputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const buttonScale = useRef(new Animated.Value(0)).current;
@@ -84,7 +82,6 @@ function RecommendScreen() {
 
   const handleBackPress = () => {
     console.log("Back pressed");
-
     if (router.canGoBack()) {
       router.back();
     } else {
@@ -94,6 +91,11 @@ function RecommendScreen() {
 
   const handleOptionsPress = () => {
     console.log("Options pressed");
+  };
+
+  const handleScroll = (event: any) => {
+    const currentOffset = event.nativeEvent.contentOffset.y;
+    setScrollOffset(currentOffset);
   };
 
   const handleOverlayVisible = (
@@ -133,7 +135,6 @@ function RecommendScreen() {
         }),
       ]).start();
 
-      // Reset active button state
       setActiveButtonIndex(null);
       setActiveButtonLabel(null);
     }
@@ -147,21 +148,37 @@ function RecommendScreen() {
     setActiveButtonLabel(label);
   };
 
-  // Calculate card position in screen coordinates
+  // Calculate card position accounting for scroll offset and result count
   const getCardPosition = (index: number) => {
     const cardsPerRow = 3;
     const row = Math.floor(index / cardsPerRow);
     const col = index % cardsPerRow;
 
     const horizontalPadding = sizer.horizontalScale(16);
-    const cardSpacing =
-      (width - horizontalPadding * 2 - cardWidth * cardsPerRow) /
-      (cardsPerRow - 1);
-
-    const x = horizontalPadding + col * (cardWidth + cardSpacing);
-    const y =
-      row * (sizer.moderateScale(160) + sizer.moderateScale(16)) +
-      sizer.moderateScale(110);
+    
+    let x;
+    
+    // Check if this row has exactly 2 cards (for search results)
+    const cardsInCurrentRow = Math.min(cardsPerRow, filteredProfiles.length - (row * cardsPerRow));
+    
+    if (cardsInCurrentRow === 2) {
+      // For exactly 2 cards, use flex-start style positioning with consistent gap
+      const gap = sizer.horizontalScale(16);
+      x = horizontalPadding + col * (cardWidth + gap);
+    } else {
+      // For 1, 3+ cards, use space-between style positioning
+      const cardSpacing = cardsInCurrentRow === 1 ? 0 : 
+        (width - horizontalPadding * 2 - cardWidth * cardsInCurrentRow) / (cardsInCurrentRow - 1);
+      x = horizontalPadding + col * (cardWidth + cardSpacing);
+    }
+    
+    const headerHeight = sizer.moderateScale(110);
+    const cardHeight = sizer.moderateScale(160);
+    const cardMarginBottom = sizer.moderateScale(16);
+    
+    const y = headerHeight + 
+              (row * (cardHeight + cardMarginBottom)) - 
+              scrollOffset;
 
     return { x, y };
   };
@@ -214,7 +231,6 @@ function RecommendScreen() {
         if (activeButtonIndex !== null && activeCardData) {
           activeCardData.floatingButtons[activeButtonIndex].action();
         }
-
         handleOverlayVisible(false, "");
       }
     },
@@ -225,6 +241,19 @@ function RecommendScreen() {
       }
     },
   });
+
+  // Helper function to get grid style based on result count
+  const getGridStyle = () => {
+    const totalResults = filteredProfiles.length;
+    
+    // If total results is exactly 2, use flex-start
+    if (totalResults === 2) {
+      return [styles.profileGrid, styles.profileGridFlexStart];
+    }
+    
+    // For all other cases (1, 3, 4, 5+), use space-between
+    return styles.profileGrid;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -255,8 +284,10 @@ function RecommendScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           scrollEnabled={!isOverlayVisible}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
         >
-          <View style={styles.profileGrid}>
+          <View style={getGridStyle()}>
             {filteredProfiles.map((profile, index) => (
               <ProfileCard
                 key={profile.id}
@@ -281,10 +312,12 @@ function RecommendScreen() {
         </ScrollView>
       </View>
 
+      {/* Global overlay */}
       {isOverlayVisible && (
         <View style={styles.globalOverlay} pointerEvents="none" />
       )}
 
+      {/* Active card highlight */}
       {isOverlayVisible && activeCardData && (
         <View
           style={[
@@ -311,7 +344,7 @@ function RecommendScreen() {
                   {activeCardData.profile.verified && (
                     <Ionicons
                       name="checkmark-circle"
-                      size={sizer.moderateScale(14)}
+                      size={sizer.moderateScale(10)}
                       color={Colors.accentBlue}
                     />
                   )}
@@ -321,13 +354,12 @@ function RecommendScreen() {
                 </Text>
               </View>
             </View>
-
             <View style={styles.activeCardBorder} />
           </View>
         </View>
       )}
 
-      {/* Dynamic text heading above floating buttons */}
+      {/* Dynamic text label */}
       {isOverlayVisible && activeCardData && (
         <View
           style={[
@@ -372,14 +404,14 @@ function RecommendScreen() {
         </View>
       )}
 
+      {/* Center dot */}
       {isOverlayVisible && activeCardData && (
         <View
           style={[
             styles.centerDotContainer,
             {
-              top: activeCardData.cardPosition.y + sizer.moderateScale(160) / 2, // Card height / 2
-              left:
-                activeCardData.cardPosition.x + activeCardData.cardWidth / 2, // Card width / 2
+              top: activeCardData.cardPosition.y + sizer.moderateScale(160) / 2,
+              left: activeCardData.cardPosition.x + activeCardData.cardWidth / 2,
             },
           ]}
           pointerEvents="none"
@@ -388,6 +420,7 @@ function RecommendScreen() {
         </View>
       )}
 
+      {/* Floating action buttons */}
       {isOverlayVisible && activeCardData && (
         <View
           style={[
@@ -421,9 +454,7 @@ function RecommendScreen() {
                       { translateY: buttonPos.y },
                       { scale: isActive ? 1.1 : 1 },
                     ],
-                    backgroundColor: isActive
-                      ? Colors.accentBlue
-                      : button.color,
+                    backgroundColor: isActive ? Colors.accentBlue : button.color,
                     opacity: isActive ? 1 : 0.9,
                   },
                 ]}
@@ -436,14 +467,10 @@ function RecommendScreen() {
               </Animated.View>
             );
           })}
-
-          {/* Center dot */}
-          {/* <View style={styles.centerIndicator}>
-            <View style={styles.centerDot} />
-          </View> */}
         </View>
       )}
 
+      {/* Bottom toggle */}
       <BottomToggle
         viewMode={viewMode}
         onViewModeChange={(view) => setViewMode(view)}
@@ -468,7 +495,11 @@ const styles = StyleSheet.create({
   profileGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "space-between", // Default for 1, 3+ cards
+  },
+  profileGridFlexStart: {
+    justifyContent: "flex-start", // Only for exactly 2 cards
+    gap:sizer.horizontalScale(14)
   },
   noResultsContainer: {
     alignItems: "center",
@@ -481,7 +512,6 @@ const styles = StyleSheet.create({
     color: Colors.secondWhite,
     textAlign: "center",
   },
-
   globalOverlay: {
     position: "absolute",
     top: 0,
@@ -491,7 +521,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.9)",
     zIndex: 900,
   },
-
   activeCardContainer: {
     position: "absolute",
     zIndex: 1000,
@@ -527,7 +556,8 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.semiBold,
     fontSize: Typography.sizes.md,
     color: Colors.mainWhite,
-    marginRight: sizer.moderateScale(4),
+    // marginRight: sizer.moderateScale(4),
+    maxWidth:"80%"
   },
   activeCardDistance: {
     fontFamily: Typography.fonts.regular,
@@ -542,24 +572,25 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderRadius: sizer.moderateScale(16),
   },
-
   dynamicTextContainer: {
     position: "absolute",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1150,
-    backgroundColor: "red",
+    marginLeft: -sizer.moderateScale(50),
   },
   dynamicText: {
     fontFamily: Typography.fonts.semiBold,
-    fontSize: sizer.fontScale(40),
+    fontSize: sizer.fontScale(26),
     color: Colors.mainWhite,
     paddingHorizontal: sizer.moderateScale(16),
     paddingVertical: sizer.moderateScale(8),
+    backgroundColor: "rgba(0,0,0,0.8)",
     borderRadius: sizer.moderateScale(20),
     overflow: "hidden",
+    textAlign: "center",
+    minWidth: sizer.moderateScale(100),
   },
-
   floatingButtonsContainer: {
     position: "absolute",
     justifyContent: "center",
@@ -579,21 +610,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
   },
-  centerIndicator: {
-    position: "absolute",
-    justifyContent: "center",
-    alignItems: "center",
-    right: -60,
-  },
-
   centerDotContainer: {
     position: "absolute",
-    zIndex: 1050, // Below floating buttons but above overlay
+    zIndex: 1050,
     width: sizer.moderateScale(8),
     height: sizer.moderateScale(8),
-    // Transform to center the dot exactly
-    marginLeft: -sizer.moderateScale(4), // Half of width
-    marginTop: -sizer.moderateScale(4), // Half of height
+    marginLeft: -sizer.moderateScale(4),
+    marginTop: -sizer.moderateScale(4),
     justifyContent: "center",
     alignItems: "center",
   },
