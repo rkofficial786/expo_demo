@@ -22,6 +22,7 @@ import { ProfileCard } from "@/components/views/recommend/profile-card";
 import BottomToggle from "@/components/views/recommend/bottom-toggle";
 import { Typography } from "@/constants/typography";
 import { Colors } from "@/constants/Colors";
+import { router } from "expo-router";
 
 const { width } = Dimensions.get("window");
 const cardWidth = (width - sizer.horizontalScale(48)) / 3;
@@ -83,6 +84,12 @@ function RecommendScreen() {
 
   const handleBackPress = () => {
     console.log("Back pressed");
+
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(tabs)");
+    }
   };
 
   const handleOptionsPress = () => {
@@ -368,6 +375,22 @@ function RecommendScreen() {
       {isOverlayVisible && activeCardData && (
         <View
           style={[
+            styles.centerDotContainer,
+            {
+              top: activeCardData.cardPosition.y + sizer.moderateScale(160) / 2, // Card height / 2
+              left:
+                activeCardData.cardPosition.x + activeCardData.cardWidth / 2, // Card width / 2
+            },
+          ]}
+          pointerEvents="none"
+        >
+          <View style={styles.centerDot} />
+        </View>
+      )}
+
+      {isOverlayVisible && activeCardData && (
+        <View
+          style={[
             styles.floatingButtonsContainer,
             {
               top: activeCardData.cardPosition.y + sizer.moderateScale(80),
@@ -415,16 +438,16 @@ function RecommendScreen() {
           })}
 
           {/* Center dot */}
-          <View style={styles.centerIndicator}>
+          {/* <View style={styles.centerIndicator}>
             <View style={styles.centerDot} />
-          </View>
+          </View> */}
         </View>
       )}
 
-       {/* <BottomToggle
+      <BottomToggle
         viewMode={viewMode}
         onViewModeChange={(view) => setViewMode(view)}
-      />  */}
+      />
     </SafeAreaView>
   );
 }
@@ -560,13 +583,28 @@ const styles = StyleSheet.create({
     position: "absolute",
     justifyContent: "center",
     alignItems: "center",
+    right: -60,
+  },
+
+  centerDotContainer: {
+    position: "absolute",
+    zIndex: 1050, // Below floating buttons but above overlay
+    width: sizer.moderateScale(8),
+    height: sizer.moderateScale(8),
+    // Transform to center the dot exactly
+    marginLeft: -sizer.moderateScale(4), // Half of width
+    marginTop: -sizer.moderateScale(4), // Half of height
+    justifyContent: "center",
+    alignItems: "center",
   },
   centerDot: {
-    width: sizer.moderateScale(0),
-    height: sizer.moderateScale(0),
-    borderRadius: sizer.moderateScale(3),
-    backgroundColor: Colors.mainWhite,
-    opacity: 0.6,
+    width: sizer.moderateScale(50),
+    height: sizer.moderateScale(50),
+    borderRadius: sizer.moderateScale(100),
+    // backgroundColor: "green",
+    borderWidth: 2,
+    borderColor: Colors.secondWhite,
+    opacity: 1,
   },
 });
 

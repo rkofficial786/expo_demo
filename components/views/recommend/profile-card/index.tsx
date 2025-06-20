@@ -48,6 +48,10 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   const cardHighlight = useRef(new Animated.Value(0)).current;
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   
+  // Track initial touch position and movement
+  const initialTouch = useRef({ x: 0, y: 0 });
+  const hasMovedSignificantly = useRef(false);
+  
   // Define floating action buttons with labels
   const floatingButtons: FloatingButton[] = [
     {
@@ -127,40 +131,81 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
 
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => isLongPressing,
+    
+    // KEY FIX: Only set pan responder if not moving significantly and not already long pressing
+    onMoveShouldSetPanResponder: (evt, gestureState) => {
+      const { dx, dy } = gestureState;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // If user is moving more than 10 pixels and not long pressing, don't capture
+      if (distance > 10 && !isLongPressing) {
+        return false;
+      }
+      
+      // If already long pressing, we want to capture movement
+      return isLongPressing;
+    },
     
     onPanResponderGrant: (evt) => {
+      // Store initial touch position
+      initialTouch.current = {
+        x: evt.nativeEvent.pageX,
+        y: evt.nativeEvent.pageY
+      };
+      hasMovedSignificantly.current = false;
+      
+      // Start long press timer
       longPressTimer.current = setTimeout(() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        
-        setIsLongPressing(true);
-        // Pass card data with button info and active button callback
-        onOverlayVisible?.(true, profile.id, { 
-          cardPosition, 
-          cardWidth, 
-          profile,
-          floatingButtons,
-          getButtonPosition,
-          shouldShowOnLeft,
-          onActiveButtonChange
-        });
-        
-        // Animate card highlight
-        Animated.timing(cardHighlight, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: false,
-        }).start();
-      }, 400);
+        // Only trigger if user hasn't moved significantly
+        if (!hasMovedSignificantly.current) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          
+          setIsLongPressing(true);
+          // Pass card data with button info and active button callback
+          onOverlayVisible?.(true, profile.id, { 
+            cardPosition, 
+            cardWidth, 
+            profile,
+            floatingButtons,
+            getButtonPosition,
+            shouldShowOnLeft,
+            onActiveButtonChange
+          });
+          
+          // Animate card highlight
+          Animated.timing(cardHighlight, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: false,
+          }).start();
+        }
+      }, 500); // Increased timeout to 500ms for better scroll detection
     },
     
     onPanResponderMove: (evt, gestureState) => {
-      if (isLongPressing) {
+      const { dx, dy } = gestureState;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // ONLY cancel long press if we're NOT already long pressing
+      if (!isLongPressing) {
+        // Check if user has moved significantly since initial touch
+        if (distance > 15) {
+          hasMovedSignificantly.current = true;
+          
+          // Cancel long press timer if user is scrolling
+          if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+          }
+          return;
+        }
+      } else {
+        // We ARE long pressing - handle floating button detection
         const fingerX = gestureState.dx;
         const fingerY = gestureState.dy;
         const buttonIndex = getButtonUnderFinger(fingerX, fingerY);
         
-        // ONLY FIX: Update active button immediately when finger moves
+        // Update active button immediately when finger moves
         if (buttonIndex !== activeButtonIndex) {
           if (buttonIndex !== null) {
             Haptics.selectionAsync();
@@ -175,6 +220,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
     },
     
     onPanResponderRelease: () => {
+      // Always clear the timer
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
@@ -200,9 +246,27 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
           setIsLongPressing(false);
           onOverlayVisible?.(false, profile.id);
         });
-      } else {
-        // Regular tap
+      } else if (!hasMovedSignificantly.current) {
+        // Regular tap (only if user didn't move significantly)
         onPress?.(profile);
+      }
+      
+      // Reset tracking variables
+      hasMovedSignificantly.current = false;
+    },
+    
+    // KEY FIX: Handle termination properly (when scroll view takes over)
+    onPanResponderTerminate: () => {
+      // Clear timer and reset state when gesture is terminated by parent (scroll)
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+      
+      // ONLY reset if we're not already long pressing
+      // If we are long pressing, let the user continue their gesture
+      if (!isLongPressing) {
+        hasMovedSignificantly.current = false;
       }
     },
   });
@@ -213,27 +277,6 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         styles.profileCard, 
         { 
           width: cardWidth,
-          // Add highlight effect
-          // shadowColor: cardHighlight.interpolate({
-          //   inputRange: [0, 1],
-          //   outputRange: ['transparent', Colors.accentBlue],
-          // }),
-          // shadowOffset: {
-          //   width: 0,
-          //   height: 0,
-          // },
-          // shadowOpacity: cardHighlight.interpolate({
-          //   inputRange: [0, 1],
-          //   outputRange: [0, 0.8],
-          // }),
-          // shadowRadius: cardHighlight.interpolate({
-          //   inputRange: [0, 1],
-          //   outputRange: [0, 20],
-          // }),
-          // elevation: cardHighlight.interpolate({
-          //   inputRange: [0, 1],
-          //   outputRange: [2, 15],
-          // }),
         }
       ]}
       {...panResponder.panHandlers}
@@ -259,7 +302,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
             {profile.verified && (
               <Ionicons
                 name="checkmark-circle"
-                size={sizer.moderateScale(14)}
+                size={sizer.moderateScale(10)}
                 color={Colors.accentBlue}
               />
             )}

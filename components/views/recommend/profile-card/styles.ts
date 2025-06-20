@@ -38,7 +38,8 @@ export const styles = StyleSheet.create({
     fontFamily: Typography.fonts.semiBold,
     fontSize: Typography.sizes.md,
     color: Colors.mainWhite,
-    marginRight: sizer.moderateScale(4),
+    marginRight: sizer.moderateScale(-2),
+    maxWidth:"80%"
   },
   profileDistance: {
     fontFamily: Typography.fonts.regular,
