@@ -4,7 +4,6 @@ import {
   Text,
   Image,
   Dimensions,
-  PanResponder,
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -46,11 +45,18 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   const [isLongPressing, setIsLongPressing] = useState(false);
   const [activeButtonIndex, setActiveButtonIndex] = useState<number | null>(null);
   const cardHighlight = useRef(new Animated.Value(0)).current;
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   
-  // Track initial touch position and movement
-  const initialTouch = useRef({ x: 0, y: 0 });
-  const hasMovedSignificantly = useRef(false);
+  // Touch state - using refs to avoid re-renders
+  const touchState = useRef({
+    isActive: false,
+    startX: 0,
+    startY: 0,
+    startTime: 0,
+    hasActivatedLongPress: false,
+    hasMoved: false
+  });
+  
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   
   // Define floating action buttons with labels
   const floatingButtons: FloatingButton[] = [
@@ -112,9 +118,9 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
     };
   };
 
-  // ONLY FIX: Better gesture detection - larger radius for easier detection
+  // Better gesture detection - larger radius for easier detection
   const getButtonUnderFinger = (gestureX: number, gestureY: number) => {
-    const buttonRadius = sizer.moderateScale(50); // Increased from 30 to 50 for better detection
+    const buttonRadius = sizer.moderateScale(50);
     
     for (let i = 0; i < floatingButtons.length; i++) {
       const buttonPos = getButtonPosition(i, floatingButtons.length);
@@ -129,147 +135,81 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
     return null;
   };
 
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
+  // Calculate relative finger position for button detection
+  const getRelativeFingerPosition = (pageX: number, pageY: number) => {
+    // Convert page coordinates to relative coordinates for button detection
+    const centerX = cardPosition.x + cardWidth / 2;
+    const centerY = cardPosition.y + sizer.moderateScale(80);
     
-    // KEY FIX: Only set pan responder if not moving significantly and not already long pressing
-    onMoveShouldSetPanResponder: (evt, gestureState) => {
-      const { dx, dy } = gestureState;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      
-      // If user is moving more than 10 pixels and not long pressing, don't capture
-      if (distance > 10 && !isLongPressing) {
-        return false;
-      }
-      
-      // If already long pressing, we want to capture movement
-      return isLongPressing;
-    },
+    return {
+      x: pageX - centerX,
+      y: pageY - centerY
+    };
+  };
+
+  // Activate long press
+  const activateLongPress = () => {
+    if (touchState.current.hasActivatedLongPress) return;
     
-    onPanResponderGrant: (evt) => {
-      // Store initial touch position
-      initialTouch.current = {
-        x: evt.nativeEvent.pageX,
-        y: evt.nativeEvent.pageY
-      };
-      hasMovedSignificantly.current = false;
-      
-      // Start long press timer
-      longPressTimer.current = setTimeout(() => {
-        // Only trigger if user hasn't moved significantly
-        if (!hasMovedSignificantly.current) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          
-          setIsLongPressing(true);
-          // Pass card data with button info and active button callback
-          onOverlayVisible?.(true, profile.id, { 
-            cardPosition, 
-            cardWidth, 
-            profile,
-            floatingButtons,
-            getButtonPosition,
-            shouldShowOnLeft,
-            onActiveButtonChange
-          });
-          
-          // Animate card highlight
-          Animated.timing(cardHighlight, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: false,
-          }).start();
-        }
-      }, 500); // Increased timeout to 500ms for better scroll detection
-    },
+    console.log("🔥 ACTIVATING LONG PRESS");
+    touchState.current.hasActivatedLongPress = true;
     
-    onPanResponderMove: (evt, gestureState) => {
-      const { dx, dy } = gestureState;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      
-      // ONLY cancel long press if we're NOT already long pressing
-      if (!isLongPressing) {
-        // Check if user has moved significantly since initial touch
-        if (distance > 15) {
-          hasMovedSignificantly.current = true;
-          
-          // Cancel long press timer if user is scrolling
-          if (longPressTimer.current) {
-            clearTimeout(longPressTimer.current);
-            longPressTimer.current = null;
-          }
-          return;
-        }
-      } else {
-        // We ARE long pressing - handle floating button detection
-        const fingerX = gestureState.dx;
-        const fingerY = gestureState.dy;
-        const buttonIndex = getButtonUnderFinger(fingerX, fingerY);
-        
-        // Update active button immediately when finger moves
-        if (buttonIndex !== activeButtonIndex) {
-          if (buttonIndex !== null) {
-            Haptics.selectionAsync();
-          }
-          setActiveButtonIndex(buttonIndex);
-          
-          // Update parent component with active button info
-          const label = buttonIndex !== null ? floatingButtons[buttonIndex].label : null;
-          onActiveButtonChange?.(buttonIndex, label);
-        }
-      }
-    },
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    onPanResponderRelease: () => {
-      // Always clear the timer
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-      }
-      
-      if (isLongPressing) {
-        // Execute action if a button was selected
-        if (activeButtonIndex !== null) {
-          floatingButtons[activeButtonIndex].action();
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-        
-        // Reset active button
-        setActiveButtonIndex(null);
-        onActiveButtonChange?.(null, null);
-        
-        // Hide overlay and reset card highlight
-        Animated.timing(cardHighlight, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: false,
-        }).start(() => {
-          setIsLongPressing(false);
-          onOverlayVisible?.(false, profile.id);
-        });
-      } else if (!hasMovedSignificantly.current) {
-        // Regular tap (only if user didn't move significantly)
-        onPress?.(profile);
-      }
-      
-      // Reset tracking variables
-      hasMovedSignificantly.current = false;
-    },
+    setIsLongPressing(true);
+    onOverlayVisible?.(true, profile.id, { 
+      cardPosition, 
+      cardWidth, 
+      profile,
+      floatingButtons,
+      getButtonPosition,
+      shouldShowOnLeft,
+      onActiveButtonChange
+    });
     
-    // KEY FIX: Handle termination properly (when scroll view takes over)
-    onPanResponderTerminate: () => {
-      // Clear timer and reset state when gesture is terminated by parent (scroll)
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-      }
-      
-      // ONLY reset if we're not already long pressing
-      // If we are long pressing, let the user continue their gesture
-      if (!isLongPressing) {
-        hasMovedSignificantly.current = false;
-      }
-    },
-  });
+    Animated.timing(cardHighlight, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  // Deactivate long press
+  const deactivateLongPress = () => {
+    console.log("🔴 DEACTIVATING LONG PRESS");
+    
+    // Reset active button
+    setActiveButtonIndex(null);
+    onActiveButtonChange?.(null, null);
+    
+    // Hide overlay and reset card highlight
+    Animated.timing(cardHighlight, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: false,
+    }).start(() => {
+      setIsLongPressing(false);
+      onOverlayVisible?.(false, profile.id);
+    });
+    
+    // Reset touch state
+    touchState.current = {
+      isActive: false,
+      startX: 0,
+      startY: 0,
+      startTime: 0,
+      hasActivatedLongPress: false,
+      hasMoved: false
+    };
+  };
+
+  // Clear timer
+  const clearTimer = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
 
   return (
     <Animated.View
@@ -279,7 +219,112 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
           width: cardWidth,
         }
       ]}
-      {...panResponder.panHandlers}
+      onTouchStart={(evt) => {
+        console.log("👆 TOUCH START");
+        
+        // Initialize touch state
+        touchState.current = {
+          isActive: true,
+          startX: evt.nativeEvent.pageX,
+          startY: evt.nativeEvent.pageY,
+          startTime: Date.now(),
+          hasActivatedLongPress: false,
+          hasMoved: false
+        };
+        
+        clearTimer();
+        
+        // Start long press timer
+        longPressTimer.current = setTimeout(() => {
+          console.log("⏰ TIMER EXPIRED - Checking conditions");
+          console.log("Has moved:", touchState.current.hasMoved);
+          console.log("Has activated:", touchState.current.hasActivatedLongPress);
+          
+          if (!touchState.current.hasMoved && !touchState.current.hasActivatedLongPress) {
+            activateLongPress();
+          }
+        }, 700);
+      }}
+      
+      onTouchMove={(evt) => {
+        if (!touchState.current.isActive) return;
+        
+        const currentX = evt.nativeEvent.pageX;
+        const currentY = evt.nativeEvent.pageY;
+        
+        // If long press is already activated, handle button selection
+        if (touchState.current.hasActivatedLongPress && isLongPressing) {
+          console.log("🎯 LONG PRESS ACTIVE - Button selection mode");
+          
+          const relativePos = getRelativeFingerPosition(currentX, currentY);
+          const buttonIndex = getButtonUnderFinger(relativePos.x, relativePos.y);
+          
+          if (buttonIndex !== activeButtonIndex) {
+            if (buttonIndex !== null) {
+              Haptics.selectionAsync();
+            }
+            setActiveButtonIndex(buttonIndex);
+            
+            const label = buttonIndex !== null ? floatingButtons[buttonIndex].label : null;
+            onActiveButtonChange?.(buttonIndex, label);
+          }
+          
+          return; // CRITICAL: Return here to prevent any further processing
+        }
+        
+        // Check movement only if long press hasn't been activated yet
+        const distance = Math.sqrt(
+          Math.pow(currentX - touchState.current.startX, 2) + 
+          Math.pow(currentY - touchState.current.startY, 2)
+        );
+        
+        if (distance > 10) {
+          console.log("📱 SCROLLING DETECTED - Canceling long press");
+          touchState.current.hasMoved = true;
+          clearTimer();
+        }
+      }}
+      
+      onTouchEnd={(evt) => {
+        console.log("🖐️ TOUCH END");
+        
+        clearTimer();
+        
+        if (touchState.current.hasActivatedLongPress && isLongPressing) {
+          console.log("💫 EXECUTING BUTTON ACTION");
+          
+          // Execute action if a button was selected
+          if (activeButtonIndex !== null) {
+            floatingButtons[activeButtonIndex].action();
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+          
+          deactivateLongPress();
+          return;
+        }
+        
+        // Handle regular tap
+        const touchDuration = Date.now() - touchState.current.startTime;
+        
+        if (!touchState.current.hasMoved && touchDuration < 500) {
+          console.log("👆 REGULAR TAP");
+          onPress?.(profile);
+        }
+        
+        // Reset state
+        touchState.current.isActive = false;
+      }}
+      
+      onTouchCancel={() => {
+        console.log("❌ TOUCH CANCELLED");
+        clearTimer();
+        
+        if (touchState.current.hasActivatedLongPress) {
+          deactivateLongPress();
+        } else {
+          touchState.current.isActive = false;
+        }
+      }}
     >
       <Image source={{ uri: profile.imageUrl }} style={styles.profileImage} />
       

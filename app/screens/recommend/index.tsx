@@ -37,10 +37,14 @@ function RecommendScreen() {
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [activeCardData, setActiveCardData] = useState<any>(null);
-  const [activeButtonIndex, setActiveButtonIndex] = useState<number | null>(null);
-  const [activeButtonLabel, setActiveButtonLabel] = useState<string | null>(null);
+  const [activeButtonIndex, setActiveButtonIndex] = useState<number | null>(
+    null
+  );
+  const [activeButtonLabel, setActiveButtonLabel] = useState<string | null>(
+    null
+  );
   const [scrollOffset, setScrollOffset] = useState(0);
-  
+
   const searchInputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const buttonScale = useRef(new Animated.Value(0)).current;
@@ -155,30 +159,35 @@ function RecommendScreen() {
     const col = index % cardsPerRow;
 
     const horizontalPadding = sizer.horizontalScale(16);
-    
+
     let x;
-    
+
     // Check if this row has exactly 2 cards (for search results)
-    const cardsInCurrentRow = Math.min(cardsPerRow, filteredProfiles.length - (row * cardsPerRow));
-    
+    const cardsInCurrentRow = Math.min(
+      cardsPerRow,
+      filteredProfiles.length - row * cardsPerRow
+    );
+
     if (cardsInCurrentRow === 2) {
       // For exactly 2 cards, use flex-start style positioning with consistent gap
       const gap = sizer.horizontalScale(16);
       x = horizontalPadding + col * (cardWidth + gap);
     } else {
       // For 1, 3+ cards, use space-between style positioning
-      const cardSpacing = cardsInCurrentRow === 1 ? 0 : 
-        (width - horizontalPadding * 2 - cardWidth * cardsInCurrentRow) / (cardsInCurrentRow - 1);
+      const cardSpacing =
+        cardsInCurrentRow === 1
+          ? 0
+          : (width - horizontalPadding * 2 - cardWidth * cardsInCurrentRow) /
+            (cardsInCurrentRow - 1);
       x = horizontalPadding + col * (cardWidth + cardSpacing);
     }
-    
+
     const headerHeight = sizer.moderateScale(110);
     const cardHeight = sizer.moderateScale(160);
-    const cardMarginBottom = sizer.moderateScale(16);
-    
-    const y = headerHeight + 
-              (row * (cardHeight + cardMarginBottom)) - 
-              scrollOffset;
+    const cardMarginBottom = sizer.moderateScale(8);
+
+    const y =
+      headerHeight + row * (cardHeight + cardMarginBottom) - scrollOffset;
 
     return { x, y };
   };
@@ -245,12 +254,16 @@ function RecommendScreen() {
   // Helper function to get grid style based on result count
   const getGridStyle = () => {
     const totalResults = filteredProfiles.length;
-    
+
     // If total results is exactly 2, use flex-start
-    if (totalResults === 2) {
-      return [styles.profileGrid, styles.profileGridFlexStart];
+    if (totalResults === 2 || totalResults === 5) {
+      return [
+        styles.profileGrid,
+        styles.profileGridFlexStart,
+        { gap: totalResults == 5 ?sizer.horizontalScale(4)  :sizer.horizontalScale(12) },
+      ];
     }
-    
+
     // For all other cases (1, 3, 4, 5+), use space-between
     return styles.profileGrid;
   };
@@ -411,7 +424,8 @@ function RecommendScreen() {
             styles.centerDotContainer,
             {
               top: activeCardData.cardPosition.y + sizer.moderateScale(160) / 2,
-              left: activeCardData.cardPosition.x + activeCardData.cardWidth / 2,
+              left:
+                activeCardData.cardPosition.x + activeCardData.cardWidth / 2,
             },
           ]}
           pointerEvents="none"
@@ -454,7 +468,9 @@ function RecommendScreen() {
                       { translateY: buttonPos.y },
                       { scale: isActive ? 1.1 : 1 },
                     ],
-                    backgroundColor: isActive ? Colors.accentBlue : button.color,
+                    backgroundColor: isActive
+                      ? Colors.accentBlue
+                      : button.color,
                     opacity: isActive ? 1 : 0.9,
                   },
                 ]}
@@ -474,6 +490,7 @@ function RecommendScreen() {
       <BottomToggle
         viewMode={viewMode}
         onViewModeChange={(view) => setViewMode(view)}
+        isSearchActive={isSearchActive} // Pass the search state
       />
     </SafeAreaView>
   );
@@ -499,7 +516,7 @@ const styles = StyleSheet.create({
   },
   profileGridFlexStart: {
     justifyContent: "flex-start", // Only for exactly 2 cards
-    gap:sizer.horizontalScale(14)
+    // gap: sizer.horizontalScale(4),
   },
   noResultsContainer: {
     alignItems: "center",
@@ -557,7 +574,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.md,
     color: Colors.mainWhite,
     // marginRight: sizer.moderateScale(4),
-    maxWidth:"80%"
+    maxWidth: "80%",
   },
   activeCardDistance: {
     fontFamily: Typography.fonts.regular,

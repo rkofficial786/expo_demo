@@ -7,7 +7,7 @@ export const styles = StyleSheet.create({
   // Your original card styles - preserved exactly
   profileCard: {
     height: sizer.moderateScale(160),
-    marginBottom: sizer.moderateScale(16),
+    marginBottom: sizer.moderateScale(8),
     borderRadius: sizer.moderateScale(16),
     overflow: "hidden",
     backgroundColor: Colors.cards,
