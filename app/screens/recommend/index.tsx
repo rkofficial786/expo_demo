@@ -50,7 +50,6 @@ function RecommendScreen() {
   const buttonScale = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
 
-  // Filter profiles based on search query
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setFilteredProfiles(profilesData);
@@ -152,7 +151,6 @@ function RecommendScreen() {
     setActiveButtonLabel(label);
   };
 
-  // Calculate card position accounting for scroll offset and result count
   const getCardPosition = (index: number) => {
     const cardsPerRow = 3;
     const row = Math.floor(index / cardsPerRow);
@@ -162,18 +160,15 @@ function RecommendScreen() {
 
     let x;
 
-    // Check if this row has exactly 2 cards (for search results)
     const cardsInCurrentRow = Math.min(
       cardsPerRow,
       filteredProfiles.length - row * cardsPerRow
     );
 
     if (cardsInCurrentRow === 2) {
-      // For exactly 2 cards, use flex-start style positioning with consistent gap
       const gap = sizer.horizontalScale(16);
       x = horizontalPadding + col * (cardWidth + gap);
     } else {
-      // For 1, 3+ cards, use space-between style positioning
       const cardSpacing =
         cardsInCurrentRow === 1
           ? 0
@@ -251,20 +246,20 @@ function RecommendScreen() {
     },
   });
 
-  // Helper function to get grid style based on result count
   const getGridStyle = () => {
     const totalResults = filteredProfiles.length;
-
-    // If total results is exactly 2, use flex-start
     if (totalResults === 2 || totalResults === 5) {
       return [
         styles.profileGrid,
         styles.profileGridFlexStart,
-        { gap: totalResults == 5 ?sizer.horizontalScale(4)  :sizer.horizontalScale(12) },
+        {
+          gap:
+            totalResults == 5
+              ? sizer.horizontalScale(4)
+              : sizer.horizontalScale(12),
+        },
       ];
     }
-
-    // For all other cases (1, 3, 4, 5+), use space-between
     return styles.profileGrid;
   };
 
@@ -272,7 +267,6 @@ function RecommendScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
-      {/* Header */}
       {isSearchActive ? (
         <SearchHeader
           searchQuery={searchQuery}
@@ -325,12 +319,10 @@ function RecommendScreen() {
         </ScrollView>
       </View>
 
-      {/* Global overlay */}
       {isOverlayVisible && (
         <View style={styles.globalOverlay} pointerEvents="none" />
       )}
 
-      {/* Active card highlight */}
       {isOverlayVisible && activeCardData && (
         <View
           style={[
@@ -372,7 +364,6 @@ function RecommendScreen() {
         </View>
       )}
 
-      {/* Dynamic text label */}
       {isOverlayVisible && activeCardData && (
         <View
           style={[
@@ -490,7 +481,7 @@ function RecommendScreen() {
       <BottomToggle
         viewMode={viewMode}
         onViewModeChange={(view) => setViewMode(view)}
-        isSearchActive={isSearchActive} // Pass the search state
+        isSearchActive={isSearchActive}
       />
     </SafeAreaView>
   );
@@ -512,11 +503,10 @@ const styles = StyleSheet.create({
   profileGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between", // Default for 1, 3+ cards
+    justifyContent: "space-between",
   },
   profileGridFlexStart: {
-    justifyContent: "flex-start", // Only for exactly 2 cards
-    // gap: sizer.horizontalScale(4),
+    justifyContent: "flex-start",
   },
   noResultsContainer: {
     alignItems: "center",
