@@ -1,8 +1,8 @@
-import React, { RefObject } from "react";
-import { View, Text, TouchableOpacity, TextInput } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import sizer from "@/utils/sizer";
+import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { styles } from "./styles";
 
 interface SearchHeaderProps {

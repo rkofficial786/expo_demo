@@ -1,26 +1,28 @@
-import React, { useState, useRef, useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  StatusBar,
-  Dimensions,
-  SafeAreaView,
-  TextInput,
-  Keyboard,
-  StyleSheet,
-  Animated,
-  Image,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { profilesData, Profile } from "@/data/profiles-data";
-import sizer from "@/utils/sizer";
-import { SearchHeader } from "@/components/views/recommend/search-header";
+import BottomToggle from "@/components/views/recommend/bottom-toggle";
 import { NormalHeader } from "@/components/views/recommend/normal-header";
 import { ProfileCard } from "@/components/views/recommend/profile-card";
-import BottomToggle from "@/components/views/recommend/bottom-toggle";
-import { Typography } from "@/constants/typography";
+import { SearchHeader } from "@/components/views/recommend/search-header";
 import { Colors } from "@/constants/Colors";
+import { Typography } from "@/constants/typography";
+import { Profile, profilesData } from "@/data/profiles-data";
+import sizer from "@/utils/sizer";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Dimensions,
+  Image,
+  Keyboard,
+  PanResponder,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 const { width } = Dimensions.get("window");
 const cardWidth = (width - sizer.horizontalScale(48)) / 3;
@@ -41,12 +43,13 @@ function RecommendScreen() {
   const [activeButtonLabel, setActiveButtonLabel] = useState<string | null>(
     null
   );
+  const [scrollOffset, setScrollOffset] = useState(0);
+
   const searchInputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const buttonScale = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
 
-  // Filter profiles based on search query
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setFilteredProfiles(profilesData);
@@ -82,10 +85,20 @@ function RecommendScreen() {
 
   const handleBackPress = () => {
     console.log("Back pressed");
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(tabs)");
+    }
   };
 
   const handleOptionsPress = () => {
     console.log("Options pressed");
+  };
+
+  const handleScroll = (event: any) => {
+    const currentOffset = event.nativeEvent.contentOffset.y;
+    setScrollOffset(currentOffset);
   };
 
   const handleOverlayVisible = (
@@ -98,7 +111,6 @@ function RecommendScreen() {
     setActiveCardData(visible ? cardData : null);
 
     if (visible && cardData) {
-      // Animate floating buttons and text
       Animated.parallel([
         Animated.spring(buttonScale, {
           toValue: 1,
@@ -113,7 +125,6 @@ function RecommendScreen() {
         }),
       ]).start();
     } else {
-      // Hide floating buttons and text
       Animated.parallel([
         Animated.timing(buttonScale, {
           toValue: 0,
@@ -127,7 +138,6 @@ function RecommendScreen() {
         }),
       ]).start();
 
-      // Reset active button state
       setActiveButtonIndex(null);
       setActiveButtonLabel(null);
     }
@@ -141,30 +151,128 @@ function RecommendScreen() {
     setActiveButtonLabel(label);
   };
 
-  // Calculate card position in screen coordinates
   const getCardPosition = (index: number) => {
     const cardsPerRow = 3;
     const row = Math.floor(index / cardsPerRow);
     const col = index % cardsPerRow;
 
     const horizontalPadding = sizer.horizontalScale(16);
-    const cardSpacing =
-      (width - horizontalPadding * 2 - cardWidth * cardsPerRow) /
-      (cardsPerRow - 1);
 
-    const x = horizontalPadding + col * (cardWidth + cardSpacing);
+    let x;
+
+    const cardsInCurrentRow = Math.min(
+      cardsPerRow,
+      filteredProfiles.length - row * cardsPerRow
+    );
+
+    if (cardsInCurrentRow === 2) {
+      const gap = sizer.horizontalScale(16);
+      x = horizontalPadding + col * (cardWidth + gap);
+    } else {
+      const cardSpacing =
+        cardsInCurrentRow === 1
+          ? 0
+          : (width - horizontalPadding * 2 - cardWidth * cardsInCurrentRow) /
+            (cardsInCurrentRow - 1);
+      x = horizontalPadding + col * (cardWidth + cardSpacing);
+    }
+
+    const headerHeight = sizer.moderateScale(110);
+    const cardHeight = sizer.moderateScale(160);
+    const cardMarginBottom = sizer.moderateScale(8);
+
     const y =
-      row * (sizer.moderateScale(160) + sizer.moderateScale(16)) +
-      sizer.moderateScale(100);
+      headerHeight + row * (cardHeight + cardMarginBottom) - scrollOffset;
 
     return { x, y };
+  };
+
+  const globalPanResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => false,
+    onMoveShouldSetPanResponder: () => isOverlayVisible,
+
+    onPanResponderMove: (evt, gestureState) => {
+      if (isOverlayVisible && activeCardData) {
+        const buttonsCenterX =
+          activeCardData.cardPosition.x + activeCardData.cardWidth / 2 - 30;
+        const buttonsCenterY =
+          activeCardData.cardPosition.y + sizer.moderateScale(80);
+
+        const fingerX = evt.nativeEvent.pageX - buttonsCenterX;
+        const fingerY = evt.nativeEvent.pageY - buttonsCenterY;
+
+        const buttonRadius = sizer.moderateScale(50);
+        let buttonIndex = null;
+
+        for (let i = 0; i < activeCardData.floatingButtons.length; i++) {
+          const buttonPos = activeCardData.getButtonPosition(
+            i,
+            activeCardData.floatingButtons.length
+          );
+          const distance = Math.sqrt(
+            Math.pow(fingerX - buttonPos.x, 2) +
+              Math.pow(fingerY - buttonPos.y, 2)
+          );
+
+          if (distance <= buttonRadius) {
+            buttonIndex = i;
+            break;
+          }
+        }
+
+        if (buttonIndex !== activeButtonIndex) {
+          const label =
+            buttonIndex !== null
+              ? activeCardData.floatingButtons[buttonIndex].label
+              : null;
+          handleActiveButtonChange(buttonIndex, label);
+        }
+      }
+    },
+
+    onPanResponderRelease: () => {
+      if (isOverlayVisible) {
+        if (activeButtonIndex !== null && activeCardData) {
+          activeCardData.floatingButtons[activeButtonIndex].action();
+        }
+        handleOverlayVisible(false, "");
+      }
+    },
+
+    onPanResponderTerminate: () => {
+      if (isOverlayVisible) {
+        handleOverlayVisible(false, "");
+      }
+    },
+  });
+
+  const getGridStyle = () => {
+    const totalResults = filteredProfiles.length;
+    const cardsPerRow = 3;
+    const hasRowWithTwoCards = () => {
+      if (totalResults === 0) return false;
+
+      const remainingCards = totalResults % cardsPerRow;
+      return remainingCards === 2;
+    };
+
+    if (hasRowWithTwoCards()) {
+      return [
+        styles.profileGrid,
+        styles.profileGridFlexStart,
+        {
+          gap: sizer.horizontalScale(6),
+        },
+      ];
+    }
+
+    return styles.profileGrid;
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
-      {/* Header */}
       {isSearchActive ? (
         <SearchHeader
           searchQuery={searchQuery}
@@ -181,46 +289,46 @@ function RecommendScreen() {
         />
       )}
 
-      {/* Content */}
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        scrollEnabled={!isOverlayVisible}
-      >
-        <View style={styles.profileGrid}>
-          {filteredProfiles.map((profile, index) => (
-            <ProfileCard
-              key={profile.id}
-              profile={profile}
-              cardWidth={cardWidth}
-              onPress={handleProfilePress}
-              onOverlayVisible={handleOverlayVisible}
-              onActiveButtonChange={handleActiveButtonChange}
-              cardPosition={getCardPosition(index)}
-              isActiveCard={activeCardId === profile.id}
-            />
-          ))}
-        </View>
-
-        {/* No results message */}
-        {filteredProfiles.length === 0 && searchQuery.length > 0 && (
-          <View style={styles.noResultsContainer}>
-            <Text style={styles.noResultsText}>
-              No profiles found for "{searchQuery}"
-            </Text>
+      <View style={{ flex: 1 }} {...globalPanResponder.panHandlers}>
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          scrollEnabled={!isOverlayVisible}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+        >
+          <View style={getGridStyle()}>
+            {filteredProfiles.map((profile, index) => (
+              <ProfileCard
+                key={profile.id}
+                profile={profile}
+                cardWidth={cardWidth}
+                onPress={handleProfilePress}
+                onOverlayVisible={handleOverlayVisible}
+                onActiveButtonChange={handleActiveButtonChange}
+                cardPosition={getCardPosition(index)}
+                isActiveCard={activeCardId === profile.id}
+              />
+            ))}
           </View>
-        )}
-      </ScrollView>
 
-      {/* Global overlay - covers everything */}
+          {filteredProfiles.length === 0 && searchQuery.length > 0 && (
+            <View style={styles.noResultsContainer}>
+              <Text style={styles.noResultsText}>
+                No profiles found for "{searchQuery}"
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
+
       {isOverlayVisible && (
         <View style={styles.globalOverlay} pointerEvents="none" />
       )}
 
-      {/* Active card rendered above overlay */}
       {isOverlayVisible && activeCardData && (
         <View
           style={[
@@ -247,7 +355,7 @@ function RecommendScreen() {
                   {activeCardData.profile.verified && (
                     <Ionicons
                       name="checkmark-circle"
-                      size={sizer.moderateScale(14)}
+                      size={sizer.moderateScale(10)}
                       color={Colors.accentBlue}
                     />
                   )}
@@ -257,60 +365,77 @@ function RecommendScreen() {
                 </Text>
               </View>
             </View>
-            {/* Blue border highlight */}
             <View style={styles.activeCardBorder} />
           </View>
         </View>
       )}
 
-      {/* Dynamic text heading above floating buttons */}
-
-      {isOverlayVisible && activeCardData && (
+      {isOverlayVisible && activeCardData && activeButtonLabel && (
         <View
           style={[
             styles.floatingButtonsContainer,
             {
-              top: activeCardData.cardPosition.y + sizer.moderateScale(10),
+              top:
+                activeCardData.cardPosition.y < sizer.moderateScale(200)
+                  ? activeCardData.cardPosition.y + sizer.moderateScale(300)
+                  : activeCardData.cardPosition.y + sizer.moderateScale(2),
               left:
                 activeCardData.cardPosition.x + activeCardData.cardWidth / 2,
             },
           ]}
           pointerEvents="none"
         >
-          {[1].map((button: any, index: number) => {
-            const buttonPos = activeCardData.getButtonPosition(
-              index,
-              activeCardData.floatingButtons.length
-            );
-            const isActive = activeButtonIndex === index;
-
-            return (
-              <Animated.View
-                key={button.id}
-                style={[
-                  styles.dynamicTextContainer,
+          <View
+            style={[
+              styles.dynamicTextContainer,
+              {
+                transform: [
                   {
-                    transform: [
-                      // { scale: buttonScale },
-                      { translateX: buttonPos.x },
-                      { translateY: buttonPos.y },
-                      { scale: isActive ? 1.3 : 1 },
-                    ],
-                    backgroundColor: "transparent", // Sky blue when active
-                    opacity: 1,
+                    translateX: activeCardData.getButtonPosition(
+                      0,
+                      activeCardData.floatingButtons.length
+                    ).x,
                   },
-                ]}
-              >
-                <Text style={styles.dynamicText}>
-                  {activeButtonLabel || "Follow"}
-                </Text>
-              </Animated.View>
-            );
-          })}
+                  {
+                    translateY:
+                      activeCardData.cardPosition.y < sizer.moderateScale(100)
+                        ? -activeCardData.getButtonPosition(
+                            0,
+                            activeCardData.floatingButtons.length
+                          ).y
+                        : activeCardData.getButtonPosition(
+                            0,
+                            activeCardData.floatingButtons.length
+                          ).y,
+                  },
+                ],
+                backgroundColor: "transparent",
+                opacity: 1,
+              },
+            ]}
+          >
+            <Text style={styles.dynamicText}>{activeButtonLabel}</Text>
+          </View>
         </View>
       )}
 
-      {/* Floating buttons above everything */}
+      {isOverlayVisible && activeCardData && (
+        <View
+          style={[
+            styles.centerDotContainer,
+            {
+              top: activeCardData.cardPosition.y + sizer.moderateScale(160) / 2,
+              left:
+                activeCardData.cardPosition.x + activeCardData.cardWidth / 2,
+            },
+          ]}
+          pointerEvents="none"
+        >
+          <View style={styles.centerDot} />
+        </View>
+      )}
+
+      {/* Floating action buttons */}
       {isOverlayVisible && activeCardData && (
         <View
           style={[
@@ -319,8 +444,8 @@ function RecommendScreen() {
               top: activeCardData.cardPosition.y + sizer.moderateScale(80),
               left:
                 activeCardData.cardPosition.x +
-                activeCardData.cardWidth / 2 -
-                30,
+                activeCardData.cardWidth / 2 +
+                (activeCardData.shouldShowOnLeft() ? -30 : 30),
             },
           ]}
           pointerEvents="none"
@@ -342,11 +467,11 @@ function RecommendScreen() {
                       { scale: buttonScale },
                       { translateX: buttonPos.x },
                       { translateY: buttonPos.y },
-                      { scale: isActive ? 1.3 : 1 },
+                      { scale: isActive ? 1.1 : 1 },
                     ],
                     backgroundColor: isActive
                       ? Colors.accentBlue
-                      : button.color, // Sky blue when active
+                      : button.color,
                     opacity: isActive ? 1 : 0.9,
                   },
                 ]}
@@ -359,13 +484,15 @@ function RecommendScreen() {
               </Animated.View>
             );
           })}
-
-          {/* Center dot */}
-          <View style={styles.centerIndicator}>
-            <View style={styles.centerDot} />
-          </View>
         </View>
       )}
+
+      {/* Bottom toggle */}
+      <BottomToggle
+        viewMode={viewMode}
+        onViewModeChange={(view) => setViewMode(view)}
+        isSearchActive={isSearchActive}
+      />
     </SafeAreaView>
   );
 }
@@ -388,6 +515,9 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
   },
+  profileGridFlexStart: {
+    justifyContent: "flex-start",
+  },
   noResultsContainer: {
     alignItems: "center",
     justifyContent: "center",
@@ -399,19 +529,15 @@ const styles = StyleSheet.create({
     color: Colors.secondWhite,
     textAlign: "center",
   },
-
-  // Global overlay - covers all original content
   globalOverlay: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
     zIndex: 900,
   },
-
-  // Active card rendered above overlay
   activeCardContainer: {
     position: "absolute",
     zIndex: 1000,
@@ -447,7 +573,8 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.semiBold,
     fontSize: Typography.sizes.md,
     color: Colors.mainWhite,
-    marginRight: sizer.moderateScale(4),
+    // marginRight: sizer.moderateScale(4),
+    maxWidth: "80%",
   },
   activeCardDistance: {
     fontFamily: Typography.fonts.regular,
@@ -462,28 +589,25 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderRadius: sizer.moderateScale(16),
   },
-
-  // Dynamic text heading above floating buttons
   dynamicTextContainer: {
     position: "absolute",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1150,
-    backgroundColor: "red",
+    marginLeft: -sizer.moderateScale(50),
   },
   dynamicText: {
     fontFamily: Typography.fonts.semiBold,
-    fontSize: sizer.fontScale(40),
+    fontSize: sizer.fontScale(26),
     color: Colors.mainWhite,
-    // textAlign: "center",
-    // backgroundColor: "rgba(0, 0, 0, 0.7)",
     paddingHorizontal: sizer.moderateScale(16),
     paddingVertical: sizer.moderateScale(8),
+    // backgroundColor: "rgba(0,0,0,0.8)",
     borderRadius: sizer.moderateScale(20),
     overflow: "hidden",
+    textAlign: "center",
+    minWidth: sizer.moderateScale(100),
   },
-
-  // Floating buttons above everything
   floatingButtonsContainer: {
     position: "absolute",
     justifyContent: "center",
@@ -503,17 +627,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
   },
-  centerIndicator: {
+  centerDotContainer: {
     position: "absolute",
+    zIndex: 1050,
+    width: sizer.moderateScale(8),
+    height: sizer.moderateScale(8),
+    marginLeft: -sizer.moderateScale(4),
+    marginTop: -sizer.moderateScale(4),
     justifyContent: "center",
     alignItems: "center",
   },
   centerDot: {
-    width: sizer.moderateScale(0),
-    height: sizer.moderateScale(0),
-    borderRadius: sizer.moderateScale(3),
-    backgroundColor: Colors.mainWhite,
-    opacity: 0.6,
+    width: sizer.moderateScale(50),
+    height: sizer.moderateScale(50),
+    borderRadius: sizer.moderateScale(100),
+    // backgroundColor: "green",
+    borderWidth: 2,
+    borderColor: Colors.secondWhite,
+    opacity: 1,
   },
 });
 

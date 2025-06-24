@@ -3,7 +3,7 @@ export const Colors = {
   cards: "#17191D", 
   mainWhite: "#FFFFFF",
   secondWhite: "#72777C",
-  whiteHint: "rgba(114, 119, 124, 0.3)",
+  whiteHint: "rgba(114, 119, 124, 0.2)",
   divider: "#1C1C1C",
   accentYellow: "#FFB902",
   accentBlue: "#28AAE0", 

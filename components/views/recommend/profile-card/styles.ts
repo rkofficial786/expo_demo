@@ -1,13 +1,13 @@
-import { StyleSheet } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { Typography } from "@/constants/typography";
 import sizer from "@/utils/sizer";
+import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   // Your original card styles - preserved exactly
   profileCard: {
     height: sizer.moderateScale(160),
-    marginBottom: sizer.moderateScale(16),
+    marginBottom: sizer.moderateScale(8),
     borderRadius: sizer.moderateScale(16),
     overflow: "hidden",
     backgroundColor: Colors.cards,
@@ -38,7 +38,8 @@ export const styles = StyleSheet.create({
     fontFamily: Typography.fonts.semiBold,
     fontSize: Typography.sizes.md,
     color: Colors.mainWhite,
-    marginRight: sizer.moderateScale(4),
+    marginRight: sizer.moderateScale(-2),
+    maxWidth:"80%"
   },
   profileDistance: {
     fontFamily: Typography.fonts.regular,
@@ -53,8 +54,8 @@ export const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderWidth: 3,
-    borderColor: Colors.accentBlue,
+    // borderWidth: 3,
+    // borderColor: Colors.accentBlue,
     borderRadius: sizer.moderateScale(16),
     pointerEvents: "none",
   },
