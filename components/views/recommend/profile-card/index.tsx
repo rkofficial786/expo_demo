@@ -1,10 +1,10 @@
-import React, { useState, useRef } from "react";
-import { View, Text, Image, Dimensions, Animated } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { Colors } from "@/constants/Colors";
 import { Profile } from "@/data/profiles-data";
 import sizer from "@/utils/sizer";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import React, { useRef, useState } from "react";
+import { Animated, Dimensions, Image, Text, View } from "react-native";
 import { styles } from "./styles";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
@@ -100,10 +100,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
     const startY = (-(total - 1) * spacing) / 2;
     const isLeft = shouldShowOnLeft();
 
-    // Special positioning for middle button (index 1)
     let xOffset = isLeft ? -radius : radius;
     if (index === 1) {
-      // Give middle button extra left distance
       xOffset = isLeft
         ? -radius - sizer.moderateScale(30)
         : radius + sizer.moderateScale(20);
@@ -115,7 +113,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
     };
   };
 
-  // Better gesture detection - larger radius for easier detection
+  // Better gesture detection
   const getButtonUnderFinger = (gestureX: number, gestureY: number) => {
     const buttonRadius = sizer.moderateScale(50);
 
@@ -147,7 +145,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   const activateLongPress = () => {
     if (touchState.current.hasActivatedLongPress) return;
 
-    console.log("🔥 ACTIVATING LONG PRESS");
+    console.log("ACTIVATING LONG PRESS");
     touchState.current.hasActivatedLongPress = true;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -172,7 +170,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
 
   // Deactivate long press
   const deactivateLongPress = () => {
-    console.log("🔴 DEACTIVATING LONG PRESS");
+    console.log(" DEACTIVATING LONG PRESS");
 
     setActiveButtonIndex(null);
     onActiveButtonChange?.(null, null);
@@ -227,7 +225,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         clearTimer();
 
         longPressTimer.current = setTimeout(() => {
-          console.log("⏰ TIMER EXPIRED - Checking conditions");
+          console.log("TIMER EXPIRED - Checking conditions");
           console.log("Has moved:", touchState.current.hasMoved);
           console.log(
             "Has activated:",
@@ -321,7 +319,6 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
     >
       <Image source={{ uri: profile.imageUrl }} style={styles.profileImage} />
 
-      {/* Add blue border highlight */}
       <Animated.View
         style={[
           styles.cardBorderHighlight,

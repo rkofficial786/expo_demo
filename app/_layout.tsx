@@ -9,6 +9,7 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { LogBox } from "react-native";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -23,6 +24,8 @@ export default function RootLayout() {
   if (!loaded) {
     return null;
   }
+
+  LogBox.ignoreAllLogs(true);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>

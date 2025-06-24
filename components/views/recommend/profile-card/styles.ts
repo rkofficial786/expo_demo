@@ -1,7 +1,7 @@
-import { StyleSheet } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { Typography } from "@/constants/typography";
 import sizer from "@/utils/sizer";
+import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   // Your original card styles - preserved exactly

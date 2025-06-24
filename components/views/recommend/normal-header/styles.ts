@@ -1,7 +1,7 @@
-import { StyleSheet } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { Typography } from "@/constants/typography";
 import sizer from "@/utils/sizer";
+import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   header: {
@@ -11,7 +11,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: sizer.horizontalScale(8),
     paddingVertical: sizer.moderateScale(12),
     paddingTop: sizer.moderateScale(12),
-    height:sizer.horizontalScale(70)
+    height: sizer.horizontalScale(70),
   },
   headerButton: {
     width: sizer.moderateScale(40),
@@ -19,15 +19,19 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
+  headerLeft: {
+    width: sizer.horizontalScale(80),
+  },
   headerTitle: {
     fontFamily: Typography.fonts.semiBold,
     fontSize: Typography.sizes.lg,
     color: Colors.mainWhite,
     flex: 1,
     textAlign: "center",
-    marginLeft:sizer.horizontalScale(34)
   },
   headerRight: {
     flexDirection: "row",
+    width: sizer.horizontalScale(80),
   },
 });

@@ -1,28 +1,28 @@
-import React, { useState, useRef, useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  StatusBar,
-  Dimensions,
-  SafeAreaView,
-  TextInput,
-  Keyboard,
-  StyleSheet,
-  Animated,
-  Image,
-  PanResponder,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { profilesData, Profile } from "@/data/profiles-data";
-import sizer from "@/utils/sizer";
-import { SearchHeader } from "@/components/views/recommend/search-header";
+import BottomToggle from "@/components/views/recommend/bottom-toggle";
 import { NormalHeader } from "@/components/views/recommend/normal-header";
 import { ProfileCard } from "@/components/views/recommend/profile-card";
-import BottomToggle from "@/components/views/recommend/bottom-toggle";
-import { Typography } from "@/constants/typography";
+import { SearchHeader } from "@/components/views/recommend/search-header";
 import { Colors } from "@/constants/Colors";
+import { Typography } from "@/constants/typography";
+import { Profile, profilesData } from "@/data/profiles-data";
+import sizer from "@/utils/sizer";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Dimensions,
+  Image,
+  Keyboard,
+  PanResponder,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 const { width } = Dimensions.get("window");
 const cardWidth = (width - sizer.horizontalScale(48)) / 3;
@@ -248,18 +248,24 @@ function RecommendScreen() {
 
   const getGridStyle = () => {
     const totalResults = filteredProfiles.length;
-    if (totalResults === 2 || totalResults === 5) {
+    const cardsPerRow = 3;
+    const hasRowWithTwoCards = () => {
+      if (totalResults === 0) return false;
+
+      const remainingCards = totalResults % cardsPerRow;
+      return remainingCards === 2;
+    };
+
+    if (hasRowWithTwoCards()) {
       return [
         styles.profileGrid,
         styles.profileGridFlexStart,
         {
-          gap:
-            totalResults == 5
-              ? sizer.horizontalScale(4)
-              : sizer.horizontalScale(12),
+          gap: sizer.horizontalScale(6),
         },
       ];
     }
+
     return styles.profileGrid;
   };
 
@@ -408,7 +414,6 @@ function RecommendScreen() {
         </View>
       )}
 
-      {/* Center dot */}
       {isOverlayVisible && activeCardData && (
         <View
           style={[
@@ -592,7 +597,7 @@ const styles = StyleSheet.create({
     color: Colors.mainWhite,
     paddingHorizontal: sizer.moderateScale(16),
     paddingVertical: sizer.moderateScale(8),
-    backgroundColor: "rgba(0,0,0,0.8)",
+    // backgroundColor: "rgba(0,0,0,0.8)",
     borderRadius: sizer.moderateScale(20),
     overflow: "hidden",
     textAlign: "center",

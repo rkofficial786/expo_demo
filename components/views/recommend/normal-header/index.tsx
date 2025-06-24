@@ -1,12 +1,12 @@
-import React from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import sizer from "@/utils/sizer";
+import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import {
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { styles } from "./styles";
 
 interface NormalHeaderProps {
@@ -22,6 +22,7 @@ export const NormalHeader: React.FC<NormalHeaderProps> = ({
 }) => {
   return (
     <View style={styles.header}>
+      <View style={styles.headerLeft}>
       <TouchableOpacity style={styles.headerButton} onPress={onBackPress}>
         <Ionicons
           name="chevron-back"
@@ -29,6 +30,7 @@ export const NormalHeader: React.FC<NormalHeaderProps> = ({
           color={Colors.mainWhite}
         />
       </TouchableOpacity>
+      </View>
 
       <Text style={styles.headerTitle}>We recommend</Text>
 

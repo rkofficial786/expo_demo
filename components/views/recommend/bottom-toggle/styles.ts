@@ -1,13 +1,14 @@
 
-import { StyleSheet } from "react-native";
+
 import { Colors } from "@/constants/Colors";
 import { Typography } from "@/constants/typography";
 import sizer from "@/utils/sizer";
+import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   bottomToggle: {
     position: "absolute",
-    bottom: sizer.moderateScale(40),
+    bottom: sizer.moderateScale(80),
     left: 0,
     right: 0,
     flexDirection: "row",

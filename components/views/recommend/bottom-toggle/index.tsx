@@ -27,12 +27,12 @@ const BottomToggle: React.FC<BottomToggleProps> = ({
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  const bottomPosition = useState(new Animated.Value(40))[0];
+  const bottomPosition = useState(new Animated.Value(80))[0];
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsReady(true);
-    }, 700);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, []);
@@ -58,7 +58,7 @@ const BottomToggle: React.FC<BottomToggleProps> = ({
         setIsKeyboardVisible(false);
 
         Animated.timing(bottomPosition, {
-          toValue: 40,
+          toValue: 80,
           duration: Platform.OS === "ios" ? 250 : 200,
           useNativeDriver: false,
         }).start(() => {
