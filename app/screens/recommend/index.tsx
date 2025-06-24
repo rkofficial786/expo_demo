@@ -370,47 +370,52 @@ function RecommendScreen() {
         </View>
       )}
 
-      {isOverlayVisible && activeCardData && (
+      {isOverlayVisible && activeCardData && activeButtonLabel && (
         <View
           style={[
             styles.floatingButtonsContainer,
             {
-              top: activeCardData.cardPosition.y + sizer.moderateScale(2),
+              top:
+                activeCardData.cardPosition.y < sizer.moderateScale(200)
+                  ? activeCardData.cardPosition.y + sizer.moderateScale(300)
+                  : activeCardData.cardPosition.y + sizer.moderateScale(2),
               left:
                 activeCardData.cardPosition.x + activeCardData.cardWidth / 2,
             },
           ]}
           pointerEvents="none"
         >
-          {[1].map((button: any, index: number) => {
-            const buttonPos = activeCardData.getButtonPosition(
-              index,
-              activeCardData.floatingButtons.length
-            );
-            const isActive = activeButtonIndex === index;
-
-            return (
-              <Animated.View
-                key={button.id}
-                style={[
-                  styles.dynamicTextContainer,
+          <View
+            style={[
+              styles.dynamicTextContainer,
+              {
+                transform: [
                   {
-                    transform: [
-                      { translateX: buttonPos.x },
-                      { translateY: buttonPos.y },
-                      // { scale: isActive ? 1.3 : 1 },
-                    ],
-                    backgroundColor: "transparent",
-                    opacity: 1,
+                    translateX: activeCardData.getButtonPosition(
+                      0,
+                      activeCardData.floatingButtons.length
+                    ).x,
                   },
-                ]}
-              >
-                <Text style={styles.dynamicText}>
-                  {activeButtonLabel || ""}
-                </Text>
-              </Animated.View>
-            );
-          })}
+                  {
+                    translateY:
+                      activeCardData.cardPosition.y < sizer.moderateScale(100)
+                        ? -activeCardData.getButtonPosition(
+                            0,
+                            activeCardData.floatingButtons.length
+                          ).y
+                        : activeCardData.getButtonPosition(
+                            0,
+                            activeCardData.floatingButtons.length
+                          ).y,
+                  },
+                ],
+                backgroundColor: "transparent",
+                opacity: 1,
+              },
+            ]}
+          >
+            <Text style={styles.dynamicText}>{activeButtonLabel}</Text>
+          </View>
         </View>
       )}
 
